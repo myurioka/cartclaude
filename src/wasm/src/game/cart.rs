@@ -1,22 +1,15 @@
+#[allow(clippy::all)]
 pub mod cart {
     //! Cart module summarizes cart related functions.
 
     use crate::engine::{Line, Point, Renderer, Velocity};
     use crate::game::CART_START_Y;
 
-    /// Constant values in Cart module
-
-    /// Font color used for rendering the cart
-    const FONT_COLOR: &str = "green";
-
     /// Normal cart appearance - three lines representing the cart visually
     const CART: [&str; 3] = ["o❚o", " ◆ ", "O❚O"];
 
     /// Knocked cart appearance - slightly damaged/distorted visual representation
     const CART_KNOCKED: [&str; 3] = ["O❚ O", " ◆ ", "o ❚o"];
-
-    /// Vertical spacing between cart display lines in pixels
-    const CART_DISTANCE: f32 = 18.0;
 
     /// Cart width used for collision detection and positioning
     pub const CART_WIDTH: f32 = 20.0;
@@ -158,28 +151,20 @@ pub mod cart {
 
             let mut _ans: bool = false;
 
-            for i in 0.._cart_lines.len() {
-                if ((_cart_lines[i].p.x - _cart_lines[i].q.x)
-                    * (_wall_line.p.y - _cart_lines[i].p.y)
-                    + (_cart_lines[i].p.y - _cart_lines[i].q.y)
-                        * (_cart_lines[i].p.x - _wall_line.p.x))
-                    * ((_cart_lines[i].p.x - _cart_lines[i].q.x)
-                        * (_wall_line.q.y - _cart_lines[i].p.y)
-                        + (_cart_lines[i].p.y - _cart_lines[i].q.y)
-                            * (_cart_lines[i].p.x - _wall_line.q.x))
+            for _cart_line in &_cart_lines {
+                if ((_cart_line.p.x - _cart_line.q.x) * (_wall_line.p.y - _cart_line.p.y)
+                    + (_cart_line.p.y - _cart_line.q.y) * (_cart_line.p.x - _wall_line.p.x))
+                    * ((_cart_line.p.x - _cart_line.q.x) * (_wall_line.q.y - _cart_line.p.y)
+                        + (_cart_line.p.y - _cart_line.q.y) * (_cart_line.p.x - _wall_line.q.x))
                     < 0.0
-                {
-                    if ((_wall_line.p.x - _wall_line.q.x) * (_cart_lines[i].p.y - _wall_line.p.y)
-                        + (_wall_line.p.y - _wall_line.q.y) * (_wall_line.p.x - _cart_lines[i].p.x))
-                        * ((_wall_line.p.x - _wall_line.q.x)
-                            * (_cart_lines[i].q.y - _wall_line.p.y)
-                            + (_wall_line.p.y - _wall_line.q.y)
-                                * (_wall_line.p.x - _cart_lines[i].q.x))
+                    && ((_wall_line.p.x - _wall_line.q.x) * (_cart_line.p.y - _wall_line.p.y)
+                        + (_wall_line.p.y - _wall_line.q.y) * (_wall_line.p.x - _cart_line.p.x))
+                        * ((_wall_line.p.x - _wall_line.q.x) * (_cart_line.q.y - _wall_line.p.y)
+                            + (_wall_line.p.y - _wall_line.q.y) * (_wall_line.p.x - _cart_line.q.x))
                         < 0.0
-                    {
-                        _ans = true;
-                        break;
-                    }
+                {
+                    _ans = true;
+                    break;
                 }
             }
             return _ans;
@@ -202,33 +187,34 @@ pub mod cart {
             self.state_machine.context().velocity
         }
 
-        ///
-        /// Renders the cart on the screen
-        ///
-        /// Draws the cart using different visual representations based on its current state.
-        /// Normal carts use the `CART` appearance, while knocked carts use `CART_KNOCKED` appearance.
-        /// Each cart is rendered as multiple text lines with proper vertical spacing.
-        ///
-        /// # Arguments
-        /// * `renderer` - The renderer object used for drawing operations
         pub fn draw(&self, renderer: &Renderer) {
-            let mut _distance: f32 = 0.0;
-            let mut _figure = self.get_state_machine().context().figure.clone();
+            let state_machine = self.get_state_machine();
+            let context = state_machine.context();
+            let position = &Point {
+                x: context.position.x,
+                y: CART_START_Y, // ベース位置を使用
+            };
 
-            let _f: [&str; 3] = std::array::from_fn(|i| _figure[i].as_str());
-
-            for i in 0..CART_KNOCKED.len() {
-                renderer.text(
-                    &Point {
-                        x: self.state_machine.context().position.x,
-                        y: CART_START_Y - _distance,
-                    },
-                    _f[i],
-                    FONT_COLOR,
-                    "24px sans-serif",
-                    "center",
-                );
-                _distance += CART_DISTANCE;
+            // 状態に応じてCanvas描画メソッドを使用
+            match &self.state_machine {
+                CartStateMachine::Knocked(_) => {
+                    // ダメージ状態：o❚o / ◆ / O❚ O
+                    renderer.draw_knocked_racing_car(position);
+                }
+                _ => {
+                    // 通常状態または実行中：向きに応じて描画
+                    match context.direction {
+                        CarDirection::Left => {
+                            renderer.draw_left_facing_racing_car(position);
+                        }
+                        CarDirection::Right => {
+                            renderer.draw_right_facing_racing_car(position);
+                        }
+                        CarDirection::Normal => {
+                            renderer.draw_normal_racing_car(position);
+                        }
+                    }
+                }
             }
         }
     }
@@ -425,7 +411,7 @@ pub mod cart {
         /// # Returns
         /// Updated CartState<Running> with new position
         pub fn update(mut self) -> CartState<Running> {
-            self.context.position.x = self.context.position.x + self.context.velocity.x;
+            self.context.position.x += self.context.velocity.x;
             self.update_context();
             self
         }
@@ -472,27 +458,51 @@ pub mod cart {
         position: Point,
         velocity: Velocity,
         figure: [String; 3],
+        direction: CarDirection, // 追加：車の向き
+    }
+
+    /// 車の向きを表す列挙型
+    #[derive(Clone, Copy, Debug)]
+    pub enum CarDirection {
+        Normal, // 通常（正面）
+        Left,   // 左向き
+        Right,  // 右向き
     }
 
     impl CartContext {
-        fn new(position: Point, velocity: Velocity) -> CartContext {
+        fn new(_position: Point, _velocity: Velocity) -> CartContext {
             let _figure: [String; 3] = std::array::from_fn(|i| CART[i].to_string());
-            return CartContext {
-                position: position,
-                velocity: velocity,
+            CartContext {
+                position: _position,
+                velocity: _velocity,
                 figure: _figure,
-            };
+                direction: CarDirection::Normal, // デフォルトは通常状態
+            }
         }
         fn update(self) -> Self {
             self
         }
         fn run(mut self, velocity: Velocity) -> Self {
             self.velocity = velocity;
-            self
+            // 速度に応じて向きを自動設定
+            let direction = self.direction;
+            self.set_direction(direction)
         }
         fn knocked(mut self) -> Self {
             let _figure: [String; 3] = std::array::from_fn(|i| CART_KNOCKED[i].to_string());
             self.figure = _figure;
+            self
+        }
+
+        /// 車の向きを設定
+        fn set_direction(mut self, direction: CarDirection) -> Self {
+            self.direction = direction;
+            // 速度に応じて自動的に向きを設定
+            if self.velocity.x < -0.1 {
+                self.direction = CarDirection::Left;
+            } else if self.velocity.x > 0.1 {
+                self.direction = CarDirection::Right;
+            }
             self
         }
     }

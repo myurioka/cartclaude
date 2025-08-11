@@ -1,6 +1,7 @@
 //! Music module for handling audio playback in the game.
 //! Provides functionality for playing sound effects and managing audio resources.
 
+#[allow(clippy::all)]
 pub mod music {
     use crate::game::{Audio, Sound};
 
@@ -20,10 +21,10 @@ pub mod music {
         ///
         /// # Returns
         /// A new Music instance
-        pub fn new(audio: Audio, sound: Sound) -> Self {
+        pub fn new(_audio: Audio, _sound: Sound) -> Self {
             Music {
-                audio: audio,
-                sound: sound,
+                audio: _audio,
+                sound: _sound,
             }
         }
         /// Plays the brake sound effect using the audio interface.

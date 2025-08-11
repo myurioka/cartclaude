@@ -370,12 +370,12 @@ pub enum StateMachine {
 pub struct Running;
 impl State<Running> {
     /// Create new Running state
-    pub fn new(p: Point, q: Point, velocity: Velocity) -> Self {
+    pub fn new(_p: Point, _q: Point, _velocity: Velocity) -> Self {
         State {
             context: Context {
-                p: p,
-                q: q,
-                velocity: velocity,
+                p: _p,
+                q: _q,
+                velocity: _velocity,
             },
             _state: Running {},
         }
@@ -468,7 +468,7 @@ pub struct Material {
 }
 impl Material {
     /// Create new game materials (set highscore, audio, and sound)
-    fn new(highscore: i32, audio: Audio, sound: Sound) -> Self {
+    fn new(_highscore: i32, audio: Audio, sound: Sound) -> Self {
         let mut _walls = vec![];
         let _start_time: i32 = now().unwrap() as i32;
         for w in WALLS_DATA {
@@ -482,7 +482,7 @@ impl Material {
             music: Music::new(audio, sound),
             distance: 0.0,
             start_time: _start_time,
-            highscore: highscore,
+            highscore: _highscore,
             score: 0,
             cart: Cart::new(
                 Point {
@@ -530,51 +530,50 @@ impl Game for GameStage {
     /// Initialize game and set up audio and game materials
     async fn initialize(&self) -> Result<Box<dyn Game>> {
         log!("START");
-        match &self.machine {
-            _none => {
-                let audio = Audio::new()?;
-                let sound = audio.load_sound(BRAKESOUND_FILE).await?;
-                let background_music = audio.load_sound(BACKGROUND_MUSIC_FILE).await?;
-                audio.play_looping_sound(&background_music)?;
+        let _none = &self.machine;
+        {
+            let audio = Audio::new()?;
+            let sound = audio.load_sound(BRAKESOUND_FILE).await?;
+            let background_music = audio.load_sound(BACKGROUND_MUSIC_FILE).await?;
+            audio.play_looping_sound(&background_music)?;
 
-                let mut _walls = vec![];
-                for w in WALLS_DATA {
-                    _walls.push(Wall::new(
-                        Point { x: w.0, y: w.1 },
-                        Point { x: w.2, y: w.3 },
-                        Velocity { x: 0.0, y: 0.0 },
-                    ));
-                }
-                let machine = GameStageStateMachine::new(Material {
-                    start_time: 0,
-                    distance: 0.0,
-                    highscore: 0,
-                    score: 0,
-                    music: Music::new(audio, sound),
-                    cart: Cart::new(
-                        Point {
-                            x: CART_START_X,
-                            y: CART_START_Y,
-                        },
-                        Velocity { x: 0.0, y: 0.0 },
-                    ),
-                    ornaments: vec![Ornament::new(
-                        Point {
-                            x: ORNAMENT_X,
-                            y: ORNAMENT_Y,
-                        },
-                        Point {
-                            x: ORNAMENT_X + ORNAMENT_WIDTH,
-                            y: ORNAMENT_Y + ORNAMENT_HEIGHT,
-                        },
-                        Velocity { x: 0.0, y: 0.0 },
-                    )],
-                    walls: _walls,
-                });
-                Ok(Box::new(GameStage {
-                    machine: Some(machine),
-                }))
+            let mut _walls = vec![];
+            for w in WALLS_DATA {
+                _walls.push(Wall::new(
+                    Point { x: w.0, y: w.1 },
+                    Point { x: w.2, y: w.3 },
+                    Velocity { x: 0.0, y: 0.0 },
+                ));
             }
+            let machine = GameStageStateMachine::new(Material {
+                start_time: 0,
+                distance: 0.0,
+                highscore: 0,
+                score: 0,
+                music: Music::new(audio, sound),
+                cart: Cart::new(
+                    Point {
+                        x: CART_START_X,
+                        y: CART_START_Y,
+                    },
+                    Velocity { x: 0.0, y: 0.0 },
+                ),
+                ornaments: vec![Ornament::new(
+                    Point {
+                        x: ORNAMENT_X,
+                        y: ORNAMENT_Y,
+                    },
+                    Point {
+                        x: ORNAMENT_X + ORNAMENT_WIDTH,
+                        y: ORNAMENT_Y + ORNAMENT_HEIGHT,
+                    },
+                    Velocity { x: 0.0, y: 0.0 },
+                )],
+                walls: _walls,
+            });
+            Ok(Box::new(GameStage {
+                machine: Some(machine),
+            }))
         }
     }
 

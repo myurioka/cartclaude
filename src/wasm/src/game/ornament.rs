@@ -1,3 +1,4 @@
+#[allow(clippy::all)]
 pub mod ornament {
     //! ornament related functions.
     use crate::engine::{Point, Velocity};
@@ -34,13 +35,13 @@ pub mod ornament {
         fn draw(&self, renderer: &Renderer) {
             // GOAL
             let mut _distance: f32 = 0.0;
-            for i in 0..GOAL.len() {
+            for _goal in &GOAL {
                 renderer.text(
                     &Point {
                         x: GOAL_X + self.state_machine.context().p.x,
                         y: GOAL_Y + self.state_machine.context().p.y + _distance,
                     },
-                    GOAL[i],
+                    _goal,
                     FONT_COLOR,
                     "32 myfont",
                     "center",
@@ -63,13 +64,13 @@ pub mod ornament {
 
             for tree in trees.iter() {
                 _distance = 0.0;
-                for i in 0..TREE.len() {
+                for _tree in &TREE {
                     renderer.text(
                         &Point {
                             x: tree.0 + self.state_machine.context().p.x,
                             y: tree.1 + self.state_machine.context().p.y - _distance,
                         },
-                        TREE[i],
+                        _tree,
                         FONT_COLOR,
                         "32 myfont",
                         "center",

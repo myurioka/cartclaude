@@ -21,14 +21,14 @@ pub struct Point {
     pub y: f32,
 }
 impl Point {
-    pub fn new(x: f32, y: f32) -> Point {
-        Point { x: x, y: y }
+    pub fn new(_x: f32, _y: f32) -> Point {
+        Point { x: _x, y: _y }
     }
-    pub fn add(&self, v: Velocity) -> Point {
-        return Point {
-            x: &self.x - v.x,
-            y: &self.y - v.y,
-        };
+    pub fn add(&self, _v: Velocity) -> Point {
+        Point {
+            x: self.x - _v.x,
+            y: self.y - _v.y,
+        }
     }
 }
 
@@ -37,11 +37,6 @@ pub struct Velocity {
     pub x: f32,
     pub y: f32,
 }
-impl Velocity {
-    pub fn new(x: f32, y: f32) -> Velocity {
-        return Velocity { x: x, y: y };
-    }
-}
 
 #[derive(Clone, Copy)]
 pub struct Line {
@@ -49,13 +44,415 @@ pub struct Line {
     pub q: Point,
 }
 impl Line {
-    pub fn new(p: Point, q: Point) -> Line {
-        Line { p: p, q: q }
+    pub fn new(_p: Point, _q: Point) -> Line {
+        Line { p: _p, q: _q }
     }
 }
 
 pub struct Renderer {
     context: CanvasRenderingContext2d,
+}
+
+impl Renderer {
+    /// Draw a small filled wheel (o) at the specified position
+    pub fn draw_small_wheel(&self, point: &Point, color: &str) {
+        self.context.set_fill_style_str(color);
+        self.context.begin_path();
+        self.context
+            .arc(
+                point.x as f64,
+                CANVAS_HEIGHT as f64 - point.y as f64,
+                3.0, // radius
+                0.0,
+                std::f64::consts::PI * 2.0,
+            )
+            .unwrap_or(());
+        self.context.fill();
+
+        // Add stroke for better visibility
+        self.context.set_stroke_style_str("#1a3f2a");
+        self.context.set_line_width(0.5);
+        self.context.stroke();
+    }
+
+    /// Draw a large hollow wheel (O) at the specified position
+    pub fn draw_large_wheel(&self, point: &Point, color: &str) {
+        self.context.set_stroke_style_str(color);
+        self.context.set_line_width(2.0);
+        self.context.begin_path();
+        self.context
+            .arc(
+                point.x as f64,
+                CANVAS_HEIGHT as f64 - point.y as f64,
+                4.0, // radius
+                0.0,
+                std::f64::consts::PI * 2.0,
+            )
+            .unwrap_or(());
+        self.context.stroke();
+    }
+
+    /// Draw a center body (●) at the specified position
+    pub fn draw_center_body(&self, point: &Point, color: &str) {
+        self.context.set_fill_style_str(color);
+        self.context.begin_path();
+        self.context
+            .arc(
+                point.x as f64,
+                CANVAS_HEIGHT as f64 - point.y as f64,
+                2.5, // radius
+                0.0,
+                std::f64::consts::PI * 2.0,
+            )
+            .unwrap_or(());
+        self.context.fill();
+
+        // Add stroke for better definition
+        self.context.set_stroke_style_str("#aa2222");
+        self.context.set_line_width(0.5);
+        self.context.stroke();
+    }
+
+    /// Draw a diamond body (◆) at the specified position
+    pub fn draw_diamond_body(&self, point: &Point, color: &str) {
+        let canvas_y = CANVAS_HEIGHT as f64 - point.y as f64;
+
+        self.context.set_fill_style_str(color);
+        self.context.begin_path();
+
+        // Diamond shape: top, right, bottom, left
+        self.context.move_to(point.x as f64, canvas_y - 8.0); // top
+        self.context.line_to(point.x as f64 + 8.0, canvas_y); // right
+        self.context.line_to(point.x as f64, canvas_y + 8.0); // bottom
+        self.context.line_to(point.x as f64 - 8.0, canvas_y); // left
+        self.context.close_path();
+        self.context.fill();
+
+        // Add stroke
+        self.context.set_stroke_style_str("#2a5f41");
+        self.context.set_line_width(1.0);
+        self.context.stroke();
+    }
+
+    /// Draw racing car in normal state (o●o / ◆ / O●O)
+    pub fn draw_normal_racing_car(&self, position: &Point) {
+        let wheel_color = "#2a5f41"; // Green wheels
+        let body_color = "#cc3333"; // Red body
+        let diamond_color = "#4a9f6a"; // Green diamond
+
+        // Row 1: o●o (small wheels and center body)
+        let row1_y = position.y;
+        self.draw_small_wheel(
+            &Point {
+                x: position.x - 12.0,
+                y: row1_y,
+            },
+            wheel_color,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x,
+                y: row1_y,
+            },
+            body_color,
+        );
+        self.draw_small_wheel(
+            &Point {
+                x: position.x + 12.0,
+                y: row1_y,
+            },
+            wheel_color,
+        );
+
+        // Row 2: ◆ (diamond body)
+        let row2_y = position.y - 18.0; // CART_DISTANCE
+        self.draw_diamond_body(
+            &Point {
+                x: position.x,
+                y: row2_y,
+            },
+            diamond_color,
+        );
+
+        // Row 3: O●O (large wheels and center body)
+        let row3_y = position.y - 36.0; // 2 * CART_DISTANCE
+        self.draw_large_wheel(
+            &Point {
+                x: position.x - 12.0,
+                y: row3_y,
+            },
+            wheel_color,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x,
+                y: row3_y,
+            },
+            body_color,
+        );
+        self.draw_large_wheel(
+            &Point {
+                x: position.x + 12.0,
+                y: row3_y,
+            },
+            wheel_color,
+        );
+    }
+
+    /// Draw racing car in knocked/damaged state (O● O / ◆ / o ●o)
+    pub fn draw_knocked_racing_car(&self, position: &Point) {
+        let wheel_color = "#2a5f41"; // Green wheels
+        let body_color = "#cc3333"; // Red body
+        let diamond_color = "#4a9f6a"; // Green diamond
+
+        // Row 1: O● O (large wheels spread apart with center body)
+        let row1_y = position.y;
+        self.draw_large_wheel(
+            &Point {
+                x: position.x - 16.0,
+                y: row1_y,
+            },
+            wheel_color,
+        ); // Left further
+        self.draw_center_body(
+            &Point {
+                x: position.x,
+                y: row1_y,
+            },
+            body_color,
+        );
+        self.draw_large_wheel(
+            &Point {
+                x: position.x + 16.0,
+                y: row1_y,
+            },
+            wheel_color,
+        ); // Right further
+
+        // Row 2: ◆ (diamond body - unchanged)
+        let row2_y = position.y - 18.0;
+        self.draw_diamond_body(
+            &Point {
+                x: position.x,
+                y: row2_y,
+            },
+            diamond_color,
+        );
+
+        // Row 3: o ●o (small wheels with center body)
+        let row3_y = position.y - 36.0;
+        self.draw_small_wheel(
+            &Point {
+                x: position.x - 12.0,
+                y: row3_y,
+            },
+            wheel_color,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x,
+                y: row3_y,
+            },
+            body_color,
+        );
+        self.draw_small_wheel(
+            &Point {
+                x: position.x + 12.0,
+                y: row3_y,
+            },
+            wheel_color,
+        );
+    }
+
+    /// Draw racing car facing left (with perspective)
+    pub fn draw_left_facing_racing_car(&self, position: &Point) {
+        let wheel_color = "#2a5f41";
+        let body_color = "#cc3333";
+        let diamond_color = "#4a9f6a";
+
+        // Row 1: Elliptical wheels for perspective
+        let row1_y = position.y;
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x - 10.0,
+                y: row1_y,
+            },
+            4.0,
+            3.0,
+            wheel_color,
+            true,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x + 2.0,
+                y: row1_y,
+            },
+            body_color,
+        );
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x + 14.0,
+                y: row1_y,
+            },
+            3.0,
+            4.0,
+            wheel_color,
+            true,
+        );
+
+        // Row 2: Diamond slightly offset left
+        let row2_y = position.y - 18.0;
+        self.draw_diamond_body(
+            &Point {
+                x: position.x - 2.0,
+                y: row2_y,
+            },
+            diamond_color,
+        );
+
+        // Row 3: Elliptical large wheels for perspective
+        let row3_y = position.y - 36.0;
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x - 10.0,
+                y: row3_y,
+            },
+            5.0,
+            4.0,
+            wheel_color,
+            false,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x + 2.0,
+                y: row3_y,
+            },
+            body_color,
+        );
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x + 14.0,
+                y: row3_y,
+            },
+            4.0,
+            5.0,
+            wheel_color,
+            false,
+        );
+    }
+
+    /// Draw racing car facing right (with perspective)
+    pub fn draw_right_facing_racing_car(&self, position: &Point) {
+        let wheel_color = "#2a5f41";
+        let body_color = "#cc3333";
+        let diamond_color = "#4a9f6a";
+
+        // Row 1: Elliptical wheels for perspective
+        let row1_y = position.y;
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x - 14.0,
+                y: row1_y,
+            },
+            3.0,
+            4.0,
+            wheel_color,
+            true,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x - 2.0,
+                y: row1_y,
+            },
+            body_color,
+        );
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x + 10.0,
+                y: row1_y,
+            },
+            4.0,
+            3.0,
+            wheel_color,
+            true,
+        );
+
+        // Row 2: Diamond slightly offset right
+        let row2_y = position.y - 18.0;
+        self.draw_diamond_body(
+            &Point {
+                x: position.x + 2.0,
+                y: row2_y,
+            },
+            diamond_color,
+        );
+
+        // Row 3: Elliptical large wheels for perspective
+        let row3_y = position.y - 36.0;
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x - 14.0,
+                y: row3_y,
+            },
+            4.0,
+            5.0,
+            wheel_color,
+            false,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x - 2.0,
+                y: row3_y,
+            },
+            body_color,
+        );
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x + 10.0,
+                y: row3_y,
+            },
+            5.0,
+            4.0,
+            wheel_color,
+            false,
+        );
+    }
+
+    /// Helper method to draw elliptical wheels for perspective views
+    fn draw_ellipse_wheel(
+        &self,
+        point: &Point,
+        radius_x: f64,
+        radius_y: f64,
+        color: &str,
+        filled: bool,
+    ) {
+        let canvas_y = CANVAS_HEIGHT as f64 - point.y as f64;
+
+        if filled {
+            self.context.set_fill_style_str(color);
+        }
+        self.context.set_stroke_style_str(color);
+        self.context.set_line_width(if filled { 0.5 } else { 2.0 });
+
+        self.context.begin_path();
+        self.context
+            .ellipse(
+                point.x as f64,
+                canvas_y,
+                radius_x,
+                radius_y,
+                0.0,                        // rotation
+                0.0,                        // start angle
+                std::f64::consts::PI * 2.0, // end angle
+            )
+            .unwrap_or(());
+
+        if filled {
+            self.context.fill();
+        }
+        self.context.stroke();
+    }
 }
 
 impl Renderer {
@@ -103,7 +500,7 @@ impl GameLoop {
         let mut keyevent_receiver = prepare_input()?;
         let mut game = game.initialize().await?;
         let mut game_loop = GameLoop {
-            last_frame: browser::now()?.into(),
+            last_frame: browser::now()?,
             accumulated_delta: 0.0,
         };
 
@@ -145,9 +542,9 @@ pub struct KeyState {
 
 impl KeyState {
     fn new() -> Self {
-        return KeyState {
+        KeyState {
             pressed_keys: HashMap::new(),
-        };
+        }
     }
     pub fn is_pressed(&self, code: &str) -> bool {
         self.pressed_keys.contains_key(code)
@@ -158,7 +555,7 @@ impl KeyState {
     }
 
     fn set_released(&mut self, code: &str) {
-        self.pressed_keys.remove(code.into());
+        self.pressed_keys.remove(code);
     }
 }
 
@@ -233,10 +630,10 @@ impl Audio {
     }
 
     pub fn play_sound(&self, sound: &Sound) -> Result<()> {
-        sound::play_sound(&self.context, &sound.buffer, sound::LOOPING::No)
+        sound::play_sound(&self.context, &sound.buffer, sound::Looping::No)
     }
 
     pub fn play_looping_sound(&self, sound: &Sound) -> Result<()> {
-        sound::play_sound(&self.context, &sound.buffer, sound::LOOPING::Yes)
+        sound::play_sound(&self.context, &sound.buffer, sound::Looping::Yes)
     }
 }

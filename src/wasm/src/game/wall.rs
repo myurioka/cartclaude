@@ -1,3 +1,4 @@
+#[allow(clippy::all)]
 pub mod wall {
     //! wall related functions.
     use crate::engine::{Point, Velocity};
