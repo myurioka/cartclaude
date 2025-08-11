@@ -187,6 +187,34 @@ pub mod cart {
             self.state_machine.context().velocity
         }
 
+        ///
+        /// Sets the cart's direction explicitly
+        ///
+        /// # Arguments
+        /// * `direction` - The new direction for the cart
+        pub fn set_direction(&mut self, direction: CarDirection) {
+            let current_context = self.get_state_machine().context().clone();
+            let updated_context = CartContext {
+                position: current_context.position,
+                velocity: current_context.velocity,
+                figure: current_context.figure,
+                direction,
+            };
+            
+            // Update the context in the state machine
+            match &mut self.state_machine {
+                CartStateMachine::Idle(state) => {
+                    state.context = updated_context;
+                }
+                CartStateMachine::Running(state) => {
+                    state.context = updated_context;
+                }
+                CartStateMachine::Knocked(state) => {
+                    state.context = updated_context;
+                }
+            }
+        }
+
         pub fn draw(&self, renderer: &Renderer) {
             let state_machine = self.get_state_machine();
             let context = state_machine.context();

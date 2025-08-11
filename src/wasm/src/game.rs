@@ -185,6 +185,8 @@ impl GameStageState<Playing> {
         }
         if _keystate.is_pressed("ArrowDown") {
             _velocity.x = 0.0;
+            // 車の向きを通常（正面）に戻す
+            self.material.cart.set_direction(CarDirection::Normal);
         }
         if _keystate.is_pressed("ArrowLeft") {
             _velocity.x = -VELOCITY_X;
