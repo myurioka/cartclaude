@@ -36,12 +36,16 @@ const TITLE_MESSAGE: &str = "Push Space Key.";
 const TITLE_MESSAGE_X: f32 = CANVAS_WIDTH / 2.0;
 const TITLE_MESSAGE_Y: f32 = 660.0;
 
-const MESSAGE_TIME_X: f32 = 100.0;
-const MESSAGE_TIME_Y: f32 = 880.0;
-const MESSAGE_HIGHSCORE_X: f32 = 110.0;
+const MESSAGE_HIGHSCORE_X: f32 = 30.0;
 const MESSAGE_HIGHSCORE_Y: f32 = 940.0;
-const MESSAGE_VELOCITY_X: f32 = 110.0;
-const MESSAGE_VELOCITY_Y: f32 = 840.0;
+const MESSAGE_TIME_X: f32 = 30.0;
+const MESSAGE_TIME_Y: f32 = 900.0;
+const MESSAGE_VELOCITY_X: f32 = 30.0;
+const MESSAGE_VELOCITY_Y: f32 = 860.0;
+const MESSAGE_POSITION_X_X: f32 = 30.0;
+const MESSAGE_POSITION_X_Y: f32 = 820.0;
+const MESSAGE_POSITION_Y_X: f32 = 30.0;
+const MESSAGE_POSITION_Y_Y: f32 = 780.0;
 const MESSAGE_TIME: i32 = 100;
 const MESSAGE_RUNNING: &str = "Ready Go!";
 const MESSAGE_GAMEOVER: &str = "Game Over!";
@@ -613,7 +617,7 @@ impl Game for GameStage {
                     },
                     format!("Time: {}", get_passed_time(&_time)).as_str(),
                     FONT_COLOR,
-                    "32px selif",
+                    "28px selif",
                     "left",
                 );
                 renderer.text(
@@ -623,7 +627,27 @@ impl Game for GameStage {
                     },
                     format!("Velocity: {:.1}", _state.material.cart.get_velocity().y).as_str(),
                     FONT_COLOR,
-                    "32px selif",
+                    "28px selif",
+                    "left",
+                );
+                renderer.text(
+                    &Point {
+                        x: MESSAGE_POSITION_X_X,
+                        y: MESSAGE_POSITION_X_Y,
+                    },
+                    format!("Position X: {:.0}", _state.material.cart.get_position().x).as_str(),
+                    FONT_COLOR,
+                    "28px selif",
+                    "left",
+                );
+                renderer.text(
+                    &Point {
+                        x: MESSAGE_POSITION_Y_X,
+                        y: MESSAGE_POSITION_Y_Y,
+                    },
+                    format!("Position Y: {:.0}", _state.material.distance).as_str(),
+                    FONT_COLOR,
+                    "28px selif",
                     "left",
                 );
                 if _time < MESSAGE_TIME {
