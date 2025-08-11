@@ -49,34 +49,29 @@ pub mod ornament {
                 _distance += GOAL_DISTANCE;
             }
 
+            // Fruit trees with different fruits
             let trees = [
-                (30.0, 100.0),
-                (400.0, 500.0),
-                (400.0, 1000.0),
-                (120.0, 1500.0),
-                (620.0, 2000.0),
-                (240.0, 2300.0),
-                (620.0, 3200.0),
-                (400.0, 4200.0),
-                (320.0, 5000.0),
-                (-50.0, 6000.0),
+                (30.0, 100.0, "apple"),      // Red apple tree
+                (400.0, 500.0, "orange"),    // Orange tree
+                (400.0, 1000.0, "cherry"),   // Cherry tree
+                (120.0, 1500.0, "lemon"),    // Lemon tree
+                (620.0, 2000.0, "plum"),     // Plum tree
+                (240.0, 2300.0, "apple"),    // Another apple tree
+                (620.0, 3200.0, "orange"),   // Another orange tree
+                (400.0, 4200.0, "cherry"),   // Another cherry tree
+                (320.0, 5000.0, "lemon"),    // Another lemon tree
+                (-50.0, 6000.0, "plum"),     // Another plum tree
             ];
 
+            // Draw fruit trees using Canvas instead of ASCII
             for tree in trees.iter() {
-                _distance = 0.0;
-                for _tree in &TREE {
-                    renderer.text(
-                        &Point {
-                            x: tree.0 + self.state_machine.context().p.x,
-                            y: tree.1 + self.state_machine.context().p.y - _distance,
-                        },
-                        _tree,
-                        FONT_COLOR,
-                        "32 myfont",
-                        "center",
-                    );
-                    _distance += TREE_DISTANCE;
-                }
+                renderer.draw_fruit_tree(
+                    &Point {
+                        x: tree.0 + self.state_machine.context().p.x,
+                        y: tree.1 + self.state_machine.context().p.y,
+                    },
+                    tree.2, // fruit type
+                );
             }
         }
     }

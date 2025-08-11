@@ -453,6 +453,191 @@ impl Renderer {
         }
         self.context.stroke();
     }
+
+    /// Draw a tree trunk (▯) at the specified position
+    pub fn draw_tree_trunk(&self, point: &Point, color: &str) {
+        let canvas_y = CANVAS_HEIGHT as f64 - point.y as f64;
+        
+        self.context.set_fill_style_str(color);
+        self.context.set_stroke_style_str("#8B4513"); // Brown stroke
+        self.context.set_line_width(1.0);
+        
+        self.context.begin_path();
+        // Rectangle trunk: width=8, height=12
+        self.context.rect(
+            point.x as f64 - 4.0,  // x - width/2
+            canvas_y - 6.0,        // y - height/2
+            8.0,                   // width
+            12.0,                  // height
+        );
+        self.context.fill();
+        self.context.stroke();
+    }
+    
+    /// Draw tree leaves ($) as a circle at the specified position
+    pub fn draw_tree_leaves(&self, point: &Point, color: &str, radius: f32) {
+        self.context.set_fill_style_str(color);
+        self.context.set_stroke_style_str("#2d5016"); // Dark green stroke
+        self.context.set_line_width(0.5);
+        
+        self.context.begin_path();
+        self.context
+            .arc(
+                point.x as f64,
+                CANVAS_HEIGHT as f64 - point.y as f64,
+                radius as f64,
+                0.0,
+                std::f64::consts::PI * 2.0,
+            )
+            .unwrap_or(());
+        self.context.fill();
+        self.context.stroke();
+    }
+    
+    /// Draw a fruit on tree (various colored circles for different fruits)
+    pub fn draw_fruit(&self, point: &Point, fruit_type: &str) {
+        let (color, stroke_color, radius) = match fruit_type {
+            "apple" => ("#ff4444", "#cc2222", 3.0),      // Red apple
+            "orange" => ("#ff8800", "#dd6600", 3.5),     // Orange
+            "cherry" => ("#dd0000", "#aa0000", 2.5),     // Red cherry
+            "lemon" => ("#ffff44", "#dddd22", 3.0),      // Yellow lemon
+            "plum" => ("#8844ff", "#6622dd", 3.0),       // Purple plum
+            _ => ("#44ff44", "#22dd22", 3.0),            // Default green
+        };
+        
+        self.context.set_fill_style_str(color);
+        self.context.set_stroke_style_str(stroke_color);
+        self.context.set_line_width(0.8);
+        
+        self.context.begin_path();
+        self.context
+            .arc(
+                point.x as f64,
+                CANVAS_HEIGHT as f64 - point.y as f64,
+                radius,
+                0.0,
+                std::f64::consts::PI * 2.0,
+            )
+            .unwrap_or(());
+        self.context.fill();
+        self.context.stroke();
+    }
+    
+    /// Draw a complete fruit tree at the specified position
+    pub fn draw_fruit_tree(&self, position: &Point, fruit_type: &str) {
+        let tree_distance = 12.0;
+        
+        // Layer 1: " $ " - Single small leaf cluster
+        self.draw_tree_leaves(
+            &Point {
+                x: position.x,
+                y: position.y,
+            },
+            "#228b22", // Forest green
+            6.0,
+        );
+        // Add a fruit to the top
+        self.draw_fruit(
+            &Point {
+                x: position.x + 4.0,
+                y: position.y + 2.0,
+            },
+            fruit_type,
+        );
+        
+        // Layer 2: " $$ " - Two leaf clusters
+        let layer2_y = position.y - tree_distance;
+        self.draw_tree_leaves(
+            &Point {
+                x: position.x - 6.0,
+                y: layer2_y,
+            },
+            "#32cd32", // Lime green
+            7.0,
+        );
+        self.draw_tree_leaves(
+            &Point {
+                x: position.x + 6.0,
+                y: layer2_y,
+            },
+            "#32cd32",
+            7.0,
+        );
+        // Add fruits to both clusters
+        self.draw_fruit(
+            &Point {
+                x: position.x - 3.0,
+                y: layer2_y + 3.0,
+            },
+            fruit_type,
+        );
+        self.draw_fruit(
+            &Point {
+                x: position.x + 9.0,
+                y: layer2_y - 2.0,
+            },
+            fruit_type,
+        );
+        
+        // Layer 3: "$$$" - Three leaf clusters (main canopy)
+        let layer3_y = position.y - tree_distance * 2.0;
+        self.draw_tree_leaves(
+            &Point {
+                x: position.x - 12.0,
+                y: layer3_y,
+            },
+            "#228b22", // Forest green
+            8.0,
+        );
+        self.draw_tree_leaves(
+            &Point {
+                x: position.x,
+                y: layer3_y,
+            },
+            "#32cd32", // Lime green (center)
+            9.0,
+        );
+        self.draw_tree_leaves(
+            &Point {
+                x: position.x + 12.0,
+                y: layer3_y,
+            },
+            "#228b22", // Forest green
+            8.0,
+        );
+        // Add multiple fruits to the main canopy
+        self.draw_fruit(
+            &Point {
+                x: position.x - 8.0,
+                y: layer3_y + 4.0,
+            },
+            fruit_type,
+        );
+        self.draw_fruit(
+            &Point {
+                x: position.x + 2.0,
+                y: layer3_y - 3.0,
+            },
+            fruit_type,
+        );
+        self.draw_fruit(
+            &Point {
+                x: position.x + 8.0,
+                y: layer3_y + 2.0,
+            },
+            fruit_type,
+        );
+        
+        // Layer 4: " ▯ " - Tree trunk
+        let layer4_y = position.y - tree_distance * 3.0;
+        self.draw_tree_trunk(
+            &Point {
+                x: position.x,
+                y: layer4_y,
+            },
+            "#8b4513", // Saddle brown
+        );
+    }
 }
 
 impl Renderer {
