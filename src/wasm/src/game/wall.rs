@@ -6,6 +6,7 @@ pub mod wall {
 
     /// Wall represents a line segment boundary in the game world.
     /// Walls are static geometric elements that define collision boundaries.
+    #[derive(Clone, Copy)]
     pub struct Wall {
         pub state_machine: StateMachine,
     }

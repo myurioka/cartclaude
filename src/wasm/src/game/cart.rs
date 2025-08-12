@@ -5,12 +5,6 @@ pub mod cart {
     use crate::engine::{Line, Point, Renderer, Velocity};
     use crate::game::CART_START_Y;
 
-    /// Normal cart appearance - three lines representing the cart visually
-    const CART: [&str; 3] = ["o❚o", " ◆ ", "O❚O"];
-
-    /// Knocked cart appearance - slightly damaged/distorted visual representation
-    const CART_KNOCKED: [&str; 3] = ["O❚ O", " ◆ ", "o ❚o"];
-
     /// Cart width used for collision detection and positioning
     pub const CART_WIDTH: f32 = 20.0;
 
@@ -96,7 +90,6 @@ pub mod cart {
         /// Transitions the cart from running state to knocked state,
         /// changing its visual appearance and behavior.
         pub fn knocked(&mut self) {
-            let _figure: [String; 3] = std::array::from_fn(|i| CART_KNOCKED[i].to_string());
             self.state_machine = self.state_machine.clone().transition(Event::Knocked);
         }
 
@@ -197,7 +190,6 @@ pub mod cart {
             let updated_context = CartContext {
                 position: current_context.position,
                 velocity: current_context.velocity,
-                figure: current_context.figure,
                 direction,
             };
             
@@ -485,7 +477,6 @@ pub mod cart {
     pub struct CartContext {
         position: Point,
         velocity: Velocity,
-        figure: [String; 3],
         direction: CarDirection, // 追加：車の向き
     }
 
@@ -499,11 +490,9 @@ pub mod cart {
 
     impl CartContext {
         fn new(_position: Point, _velocity: Velocity) -> CartContext {
-            let _figure: [String; 3] = std::array::from_fn(|i| CART[i].to_string());
             CartContext {
                 position: _position,
                 velocity: _velocity,
-                figure: _figure,
                 direction: CarDirection::Normal, // デフォルトは通常状態
             }
         }
@@ -516,9 +505,7 @@ pub mod cart {
             let direction = self.direction;
             self.set_direction(direction)
         }
-        fn knocked(mut self) -> Self {
-            let _figure: [String; 3] = std::array::from_fn(|i| CART_KNOCKED[i].to_string());
-            self.figure = _figure;
+        fn knocked(self) -> Self {
             self
         }
 

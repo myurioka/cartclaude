@@ -1,6 +1,7 @@
 mod cart;
 mod music;
 mod ornament;
+mod rival_cart;
 mod wall;
 use crate::{
     browser::now,
@@ -12,6 +13,7 @@ use async_trait::async_trait;
 use cart::cart::*;
 use music::music::*;
 use ornament::ornament::*;
+use rival_cart::rival_cart::*;
 use wall::wall::*;
 /* <-- CONSTANT VALUE */
 
@@ -175,7 +177,7 @@ impl GameStageState<Playing> {
         if self.material.distance > STAGE_GOAL {
             self.material.lap_count += 1;
             self.material.distance = 0.0; // Reset distance for next lap
-            
+
             // Reset cart position to start
             self.material.cart = Cart::new(
                 Point {
@@ -184,7 +186,7 @@ impl GameStageState<Playing> {
                 },
                 Velocity { x: 0.0, y: 0.0 },
             );
-            
+
             // Reset walls to original positions
             self.material.walls.clear();
             for w in WALLS_DATA {
@@ -194,7 +196,7 @@ impl GameStageState<Playing> {
                     Velocity { x: 0.0, y: 0.0 },
                 ));
             }
-            
+
             // Reset ornaments to original positions
             self.material.ornaments = vec![Ornament::new(
                 Point {
@@ -207,7 +209,13 @@ impl GameStageState<Playing> {
                 },
                 Velocity { x: 0.0, y: 0.0 },
             )];
-            
+
+            // Reset rival cart position
+            //self.material.rival_cart.reset(Point {
+            //    x: CART_START_X - 50.0,
+            //    y: CART_START_Y,
+            //});
+
             // Check if cart completed 3 laps
             if self.material.lap_count >= 3 {
                 let mut _highscore: i32 = now().unwrap() as i32 - self.material.start_time;
@@ -281,12 +289,20 @@ impl GameStageState<Playing> {
         }
 
         self.material.cart.update();
+        self.material
+            .rival_cart
+            .update(self.material.cart.get_velocity());
         self.material.ornaments.iter_mut().for_each(|ornament| {
             ornament.update();
         });
         self.material.walls.iter_mut().for_each(|wall| {
             wall.update();
         });
+
+        // Update rival cart
+        self.material
+            .rival_cart
+            .update(self.material.cart.get_velocity());
 
         RunningEndState::Continue(self)
     }
@@ -510,6 +526,7 @@ pub struct Material {
     ornaments: Vec<Ornament>,
     walls: Vec<Wall>,
     lap_count: i32,
+    rival_cart: RivalCart,
 }
 impl Material {
     /// Create new game materials (set highscore, audio, and sound)
@@ -523,6 +540,7 @@ impl Material {
                 Velocity { x: 0.0, y: 0.0 },
             ));
         }
+        let _walls_copy = _walls.clone();
         Material {
             music: Music::new(audio, sound),
             distance: 0.0,
@@ -549,6 +567,13 @@ impl Material {
             )],
             walls: _walls,
             lap_count: 0,
+            rival_cart: RivalCart::new(
+                &_walls_copy,
+                Point {
+                    x: CART_START_X - 50.0,
+                    y: CART_START_Y,
+                },
+            ),
         }
     }
     /// Reset game materials (keep highscore)
@@ -568,6 +593,7 @@ impl Material {
         self.walls.iter().for_each(|wall| {
             wall.draw(renderer);
         });
+        self.rival_cart.draw(renderer);
     }
 }
 
@@ -591,6 +617,7 @@ impl Game for GameStage {
                     Velocity { x: 0.0, y: 0.0 },
                 ));
             }
+            let _walls_copy = _walls.clone();
             let machine = GameStageStateMachine::new(Material {
                 start_time: 0,
                 distance: 0.0,
@@ -615,8 +642,15 @@ impl Game for GameStage {
                     },
                     Velocity { x: 0.0, y: 0.0 },
                 )],
-                walls: _walls,
+                walls: _walls_copy,
                 lap_count: 0,
+                rival_cart: RivalCart::new(
+                    &_walls,
+                    Point {
+                        x: CART_START_X - 50.0,
+                        y: CART_START_Y,
+                    },
+                ),
             });
             Ok(Box::new(GameStage {
                 machine: Some(machine),
@@ -629,7 +663,6 @@ impl Game for GameStage {
         if let Some(machine) = self.machine.take() {
             self.machine.replace(machine.update(_keystate));
         }
-
         //assert!(self.machine.is_some());
     }
     // Draw the entire game
