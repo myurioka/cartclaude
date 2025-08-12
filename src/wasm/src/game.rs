@@ -171,18 +171,56 @@ impl GameStageState<Playing> {
 
         self.material.distance += _velocity.y;
 
-        // Cart reach goal
+        // Check if cart completed one lap
         if self.material.distance > STAGE_GOAL {
-            let mut _highscore: i32 = now().unwrap() as i32 - self.material.start_time;
-            if self.material.highscore != 0 {
-                _highscore = _highscore.min(self.material.highscore);
+            self.material.lap_count += 1;
+            self.material.distance = 0.0; // Reset distance for next lap
+            
+            // Reset cart position to start
+            self.material.cart = Cart::new(
+                Point {
+                    x: _position.x,
+                    y: CART_START_Y,
+                },
+                Velocity { x: 0.0, y: 0.0 },
+            );
+            
+            // Reset walls to original positions
+            self.material.walls.clear();
+            for w in WALLS_DATA {
+                self.material.walls.push(Wall::new(
+                    Point { x: w.0, y: w.1 },
+                    Point { x: w.2, y: w.3 },
+                    Velocity { x: 0.0, y: 0.0 },
+                ));
             }
-            self.material.highscore = _highscore;
-            self.material.score = now().unwrap() as i32 - self.material.start_time;
-            return RunningEndState::GameClear(GameStageState {
-                _state: GameClear,
-                material: self.material,
-            });
+            
+            // Reset ornaments to original positions
+            self.material.ornaments = vec![Ornament::new(
+                Point {
+                    x: ORNAMENT_X,
+                    y: ORNAMENT_Y,
+                },
+                Point {
+                    x: ORNAMENT_X + ORNAMENT_WIDTH,
+                    y: ORNAMENT_Y + ORNAMENT_HEIGHT,
+                },
+                Velocity { x: 0.0, y: 0.0 },
+            )];
+            
+            // Check if cart completed 3 laps
+            if self.material.lap_count >= 3 {
+                let mut _highscore: i32 = now().unwrap() as i32 - self.material.start_time;
+                if self.material.highscore != 0 {
+                    _highscore = _highscore.min(self.material.highscore);
+                }
+                self.material.highscore = _highscore;
+                self.material.score = now().unwrap() as i32 - self.material.start_time;
+                return RunningEndState::GameClear(GameStageState {
+                    _state: GameClear,
+                    material: self.material,
+                });
+            }
         }
         if _keystate.is_pressed("ArrowUp") && _velocity.y < VELOCITY_LIMIT {
             _velocity.y += VELOCITY_STEP;
@@ -471,6 +509,7 @@ pub struct Material {
     cart: Cart,
     ornaments: Vec<Ornament>,
     walls: Vec<Wall>,
+    lap_count: i32,
 }
 impl Material {
     /// Create new game materials (set highscore, audio, and sound)
@@ -509,6 +548,7 @@ impl Material {
                 Velocity { x: 0.0, y: 0.0 },
             )],
             walls: _walls,
+            lap_count: 0,
         }
     }
     /// Reset game materials (keep highscore)
@@ -576,6 +616,7 @@ impl Game for GameStage {
                     Velocity { x: 0.0, y: 0.0 },
                 )],
                 walls: _walls,
+                lap_count: 0,
             });
             Ok(Box::new(GameStage {
                 machine: Some(machine),
@@ -650,6 +691,16 @@ impl Game for GameStage {
                     "28px selif",
                     "left",
                 );
+                renderer.text(
+                    &Point {
+                        x: MESSAGE_HIGHSCORE_X + 720.0,
+                        y: MESSAGE_HIGHSCORE_Y,
+                    },
+                    format!("{} / 3", _state.material.lap_count + 1).as_str(),
+                    FONT_COLOR,
+                    "32px myfont",
+                    "right",
+                );
                 if _time < MESSAGE_TIME {
                     renderer.text(
                         &Point {
@@ -674,9 +725,9 @@ impl Game for GameStage {
                         x: TITLE_MESSAGE_X,
                         y: TITLE_MESSAGE_Y,
                     },
-                    MESSAGE_GAMECLEAR,
+                    "Race Complete!",
                     FONT_COLOR,
-                    "48px my_font",
+                    "48px myfont",
                     "center",
                 );
                 let _message = format!("Your Time: {} s", get_passed_time(&_state.material.score));
@@ -686,6 +737,16 @@ impl Game for GameStage {
                         y: TITLE_MESSAGE_Y - MESSAGE_DISTANCE,
                     },
                     &_message,
+                    FONT_COLOR,
+                    "32px my_font",
+                    "center",
+                );
+                renderer.text(
+                    &Point {
+                        x: TITLE_MESSAGE_X,
+                        y: TITLE_MESSAGE_Y - MESSAGE_DISTANCE - 50.0,
+                    },
+                    "3 Laps Completed!",
                     FONT_COLOR,
                     "32px my_font",
                     "center",
