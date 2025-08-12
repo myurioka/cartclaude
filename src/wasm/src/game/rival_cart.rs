@@ -32,71 +32,119 @@ pub mod rival_cart {
             }
         }
         pub fn update(&mut self, _velocity: Velocity) {
-            // Update rival's own distance independently
-            //self.distance += self.velocity.y;
-            self.position.y += self.velocity.y - _velocity.y;
+    // Update rival's own distance independently
+    self.distance += self.velocity.y;
+    
+    // Update Y position relative to player
+    self.position.y += self.velocity.y - _velocity.y;
 
-            // Check for upcoming walls and adjust path using rival's own distance
-            self.check_collision_and_adjust(self.distance);
+    // Check for upcoming walls and adjust path using rival's own distance
+    self.check_collision_and_adjust(self.distance);
 
-            // Update position with independent velocity
-            self.position.x += self.velocity.x;
-        }
+    // Update X position with calculated horizontal velocity
+    self.position.x += self.velocity.x;
+    
+    // Keep rival car within track boundaries
+    if self.position.x < 120.0 {
+        self.position.x = 120.0;
+        self.velocity.x = 0.0;
+    } else if self.position.x > 680.0 {
+        self.position.x = 680.0;
+        self.velocity.x = 0.0;
+    }
+}
 
         fn check_collision_and_adjust(&mut self, distance: f32) {
-            let check_ahead = distance + COLLISION_CHECK_DISTANCE;
+    let check_ahead = distance + COLLISION_CHECK_DISTANCE;
 
-            // Find walls that we might collide with
-            let mut safe_x_positions = vec![];
-            let mut blocked_ranges = vec![];
+    // Find walls that we might collide with
+    let mut safe_x_positions = vec![];
+    let mut blocked_ranges = vec![];
 
-            for wall in &self.walls {
-                let wall_min_y = wall.p().y.min(wall.q().y);
-                let wall_max_y = wall.p().y.max(wall.q().y);
+    for wall in &self.walls {
+        let wall_min_y = wall.p().y.min(wall.q().y);
+        let wall_max_y = wall.p().y.max(wall.q().y);
 
-                // Check if wall is ahead of us
-                if wall_min_y <= check_ahead && wall_max_y >= distance {
-                    let wall_x_min = wall.p().x.min(wall.q().x) - RIVAL_CART_WIDTH;
-                    let wall_x_max = wall.p().x.max(wall.q().x) + RIVAL_CART_WIDTH;
-                    blocked_ranges.push((wall_x_min, wall_x_max));
-                }
-            }
+        // Check if wall is ahead of us
+        if wall_min_y <= check_ahead && wall_max_y >= distance {
+            let wall_x_min = wall.p().x.min(wall.q().x) - RIVAL_CART_WIDTH;
+            let wall_x_max = wall.p().x.max(wall.q().x) + RIVAL_CART_WIDTH;
+            blocked_ranges.push((wall_x_min, wall_x_max));
+        }
+    }
 
-            // Find safe x positions (gaps between walls)
-            blocked_ranges.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    // Find safe x positions (gaps between walls)
+    blocked_ranges.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
 
-            let mut current_safe_start: f32 = 120.0; // Left boundary of track
-            let track_right = 680.0; // Right boundary of track
+    let mut current_safe_start: f32 = 120.0; // Left boundary of track
+    let track_right = 680.0; // Right boundary of track
 
-            for (block_start, block_end) in blocked_ranges {
-                if current_safe_start < block_start {
-                    let safe_center = (current_safe_start + block_start) / 2.0;
-                    if safe_center >= 120.0 && safe_center <= track_right {
-                        safe_x_positions.push(safe_center);
-                    }
-                }
-                current_safe_start = current_safe_start.max(block_end);
-            }
-
-            // Add final safe position after last wall
-            if current_safe_start < track_right {
-                let safe_center = (current_safe_start + track_right) / 2.0;
+    for (block_start, block_end) in blocked_ranges {
+        if current_safe_start < block_start {
+            let safe_center = (current_safe_start + block_start) / 2.0;
+            if safe_center >= 120.0 && safe_center <= track_right {
                 safe_x_positions.push(safe_center);
             }
+        }
+        current_safe_start = current_safe_start.max(block_end);
+    }
 
-            // Choose best safe position
-            if !safe_x_positions.is_empty() {
-                // Find the closest safe position to current position
-                let mut min_distance = (safe_x_positions[0] - self.position.x).abs();
+    // Add final safe position after last wall
+    if current_safe_start < track_right {
+        let safe_center = (current_safe_start + track_right) / 2.0;
+        safe_x_positions.push(safe_center);
+    }
 
-                for &safe_x in &safe_x_positions {
-                    let dist = (safe_x - self.position.x).abs();
-                    if dist < min_distance {
-                        min_distance = dist;
-                    }
-                }
+    // Choose best safe position and move towards it
+    if !safe_x_positions.is_empty() {
+        // Find the closest safe position to current position
+        let mut best_safe_x = safe_x_positions[0];
+        let mut min_distance = (safe_x_positions[0] - self.position.x).abs();
+
+        for &safe_x in &safe_x_positions {
+            let dist = (safe_x - self.position.x).abs();
+            if dist < min_distance {
+                min_distance = dist;
+                best_safe_x = safe_x;
             }
         }
+
+        // Move towards the best safe position
+        let move_speed: f32 = 2.0; // Horizontal movement speed
+        let distance_to_safe = best_safe_x - self.position.x;
+        
+        if distance_to_safe.abs() > 5.0 { // Only move if not already close enough
+            if distance_to_safe > 0.0 {
+                self.velocity.x = move_speed.min(distance_to_safe);
+                self.direction = CarDirection::Right;
+            } else {
+                self.velocity.x = (-move_speed).max(distance_to_safe);
+                self.direction = CarDirection::Left;
+            }
+        } else {
+            self.velocity.x = 0.0;
+            self.direction = CarDirection::Normal;
+        }
+    } else {
+        // No safe position found, try to move to center of track
+        let track_center = (120.0 + 680.0) / 2.0;
+        let distance_to_center = track_center - self.position.x;
+        let move_speed: f32 = 2.0;
+        
+        if distance_to_center.abs() > 5.0 {
+            if distance_to_center > 0.0 {
+                self.velocity.x = move_speed.min(distance_to_center);
+                self.direction = CarDirection::Right;
+            } else {
+                self.velocity.x = (-move_speed).max(distance_to_center);
+                self.direction = CarDirection::Left;
+            }
+        } else {
+            self.velocity.x = 0.0;
+            self.direction = CarDirection::Normal;
+        }
+    }
+}
 
         pub fn get_position(&self) -> Point {
             self.position
