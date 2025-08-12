@@ -71,7 +71,7 @@ pub mod wall {
     /// Static wall data defining the game level geometry.
     /// Each tuple represents (x1, y1, x2, y2) coordinates for wall line segments.
     /// The walls form the boundaries and obstacles of the game world.
-    pub const WALLS_DATA: [(f32, f32, f32, f32); 26] = [
+    pub const WALLS_DATA: [(f32, f32, f32, f32); 32] = [
         // left wall
         (100.0, 0.0, 100.0, 600.0),
         (100.0, 600.0, 200.0, 1000.0),
@@ -104,5 +104,13 @@ pub mod wall {
         (200.0, 6150.0, 550.0, 6150.0),
         // right wall in island2
         (200.0, 5000.0, 550.0, 6150.0),
+        // left wall in island3
+        (400.0, 7000.0, 250.0, 7400.0),
+        (250.0, 7400.0, 250.0, 7800.0),
+        (250.0, 7800.0, 400.0, 8200.0),
+        // right wall in island3
+        (400.0, 7000.0, 550.0, 7400.0),
+        (550.0, 7400.0, 550.0, 7800.0),
+        (550.0, 7800.0, 400.0, 8200.0),
     ];
 }

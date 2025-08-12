@@ -22,7 +22,7 @@ const CART_START_Y: f32 = 100.0;
 
 const FONT_COLOR: &str = "green";
 const STAGE_LEFT: f32 = 100.0;
-const STAGE_GOAL: f32 = 4200.0;
+const STAGE_GOAL: f32 = 4500.0;
 const VELOCITY_X: f32 = 0.8;
 const VELOCITY_STEP: f32 = 0.03;
 const VELOCITY_BRAKE_STEP: f32 = 0.06;
