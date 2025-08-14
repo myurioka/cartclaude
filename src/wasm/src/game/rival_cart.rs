@@ -21,11 +21,11 @@ pub mod rival_cart {
     impl RivalCart {
         pub fn new(_walls: &[Wall], _position: Point, speed: f32, _distance: f32) -> Self {
             RivalCart {
+                walls: _walls.to_vec(),
                 position: _position,
                 velocity: Velocity { x: 0.0, y: speed },
                 direction: CarDirection::Normal,
                 distance: _distance,
-                walls: _walls.to_vec(),
             }
         }
         pub fn update(&mut self, _velocity: Velocity) {
@@ -40,22 +40,12 @@ pub mod rival_cart {
 
             // Update X position with calculated horizontal velocity
             self.position.x += self.velocity.x;
-
-            // Keep rival car within track boundaries
-            //if self.position.x < 120.0 {
-            //    self.position.x = 120.0;
-            //    self.velocity.x = 0.0;
-            //} else if self.position.x > 680.0 {
-            //    self.position.x = 680.0;
-            //    self.velocity.x = 0.0;
-            //}
-            if self.distance > STAGE_GOAL {
-                self.distance = 0.0;
-                self.position.y = CART_START_Y;
-            }
         }
         pub fn get_distance(&self) -> f32 {
             self.distance
+        }
+        pub fn set_position_y(&mut self, _y: f32) {
+            self.position.y = _y;
         }
 
         fn check_collision_and_adjust(&mut self, distance: f32) {
@@ -169,18 +159,16 @@ pub mod rival_cart {
             distance < collision_radius
         }
 
-        /*
-        pub fn reset(&mut self, position: Point, speed: f32) {
-            self.position = position;
-            self.velocity = Velocity { x: 0.0, y: speed };
+        pub fn reset(&mut self, _p: Point, _v: Velocity) {
+            self.position = _p;
+            self.velocity = _v;
             self.direction = CarDirection::Normal;
             self.distance = 0.0;
         }
-        */
 
         pub fn draw(&self, renderer: &Renderer) {
             // Calculate draw position based on rival's position relative to player
-            let _draw_position: Point = self.position;
+            let _draw_position: Point = Point::new(self.position.x, self.position.y);
             // Only draw if rival is visible on screen
             //if draw_position_y > -100.0 && draw_position.y < 1100.0 {
             match self.direction {

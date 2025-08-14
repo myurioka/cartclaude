@@ -168,12 +168,11 @@ struct Playing;
 impl GameStageState<Playing> {
     /// Main update process during gameplay
     fn update(mut self, _keystate: &KeyState) -> RunningEndState {
+        // Check if cart completed one lap
         let _position: Point = self.material.cart.get_position();
         let mut _velocity: Velocity = self.material.cart.get_velocity();
-
         self.material.distance += _velocity.y;
 
-        // Check if cart completed one lap
         if self.material.distance > STAGE_GOAL {
             self.material.lap_count += 1;
             self.material.distance = 0.0; // Reset distance for next lap
@@ -204,9 +203,12 @@ impl GameStageState<Playing> {
             // Reset rival carts positions
             let mut _rival_carts: Vec<RivalCart> = Vec::new();
             for r in self.material.rival_carts {
-                let mut _p = r.get_position();
+                let _distance = 0.0;
+                let _p = Point {
+                    x: r.get_position().x,
+                    y: r.get_position().y,
+                };
                 let _speed = r.get_velocity().y;
-                let _distance = r.get_distance();
                 _rival_carts.push(RivalCart::new(&self.material.walls, _p, _speed, _distance));
             }
             self.material.rival_carts = _rival_carts;
@@ -225,6 +227,7 @@ impl GameStageState<Playing> {
                 });
             }
         }
+
         if _keystate.is_pressed("ArrowUp") && _velocity.y < VELOCITY_LIMIT {
             _velocity.y += VELOCITY_STEP;
         }
@@ -243,7 +246,6 @@ impl GameStageState<Playing> {
             _velocity.y -= VELOCITY_BRAKE_STEP;
             self.material.music.clone().play_brake_sound();
         }
-
         // velocity limit
         if _velocity.y < VELOCITY_ZERO {
             _velocity.y = 0.0
@@ -283,10 +285,23 @@ impl GameStageState<Playing> {
             };
         }
 
+        // Update cart
         self.material.cart.update();
 
         // Update all rival carts
         self.material.rival_carts.iter_mut().for_each(|rival_cart| {
+            // Keep rival car within track boundaries
+            //if self.position.x < 120.0 {
+            //    self.position.x = 120.0;
+            //    self.velocity.x = 0.0;
+            //} else if self.position.x > 680.0 {
+            //    self.position.x = 680.0;
+            //    self.velocity.x = 0.0;
+            //}
+            //if rival_cart.get_distance() > STAGE_GOAL {
+            //    let _position_y = self.material.distance;
+            //    let _ = rival_cart.set_position_y(_position_y);
+            //}
             rival_cart.update(self.material.cart.get_velocity());
         });
 
@@ -547,14 +562,14 @@ impl Material {
         let _walls_copy = _walls.clone();
 
         // Create 3 rival cars with different speeds and positions
-        let mut rival_carts = vec![];
-        rival_carts.push(RivalCart::new(
+        let mut _rival_carts = vec![];
+        _rival_carts.push(RivalCart::new(
             &_walls_copy,
             Point {
                 x: CART_START_X - 50.0,
                 y: CART_START_Y,
             },
-            0.1, // Original speed
+            3.0, // Original speed
             0.0,
         ));
         /*
@@ -564,16 +579,16 @@ impl Material {
                 x: CART_START_X - 200.0,
                 y: CART_START_Y,
             },
-            0.1, // Speed 2.0
+            2.5, // Speed 2.0
             0.0,
         ));
         rival_carts.push(RivalCart::new(
             &_walls_copy,
             Point {
-                x: CART_START_X + 250.0,
+                x: CART_START_X + 200.0,
                 y: CART_START_Y,
             },
-            0.1, // Speed 1.0
+            1.8, // Speed 1.0
             0.0,
         ));
         */
@@ -604,7 +619,7 @@ impl Material {
             )],
             walls: _walls,
             lap_count: 0,
-            rival_carts,
+            rival_carts: _rival_carts,
         }
     }
     /// Reset game materials (keep highscore)
@@ -650,64 +665,9 @@ impl Game for GameStage {
                 ));
             }
             let _walls_copy = _walls.clone();
-            let machine = GameStageStateMachine::new(Material {
-                start_time: 0,
-                distance: 0.0,
-                highscore: 0,
-                score: 0,
-                music: Music::new(audio, sound),
-                cart: Cart::new(
-                    Point {
-                        x: CART_START_X,
-                        y: CART_START_Y,
-                    },
-                    Velocity { x: 0.0, y: 0.0 },
-                ),
-                ornaments: vec![Ornament::new(
-                    Point {
-                        x: ORNAMENT_X,
-                        y: ORNAMENT_Y,
-                    },
-                    Point {
-                        x: ORNAMENT_X + ORNAMENT_WIDTH,
-                        y: ORNAMENT_Y + ORNAMENT_HEIGHT,
-                    },
-                    Velocity { x: 0.0, y: 0.0 },
-                )],
-                walls: _walls_copy,
-                lap_count: 0,
-                rival_carts: {
-                    let mut rival_carts = vec![];
-                    rival_carts.push(RivalCart::new(
-                        &_walls,
-                        Point {
-                            x: CART_START_X - 50.0,
-                            y: CART_START_Y,
-                        },
-                        3.0,
-                        0.0,
-                    ));
-                    rival_carts.push(RivalCart::new(
-                        &_walls,
-                        Point {
-                            x: CART_START_X - 200.0,
-                            y: CART_START_Y,
-                        },
-                        2.0,
-                        0.0,
-                    ));
-                    rival_carts.push(RivalCart::new(
-                        &_walls,
-                        Point {
-                            x: CART_START_X + 250.0,
-                            y: CART_START_Y,
-                        },
-                        1.0,
-                        0.0,
-                    ));
-                    rival_carts
-                },
-            });
+            let _material = Material::new(0, audio, sound);
+
+            let machine = GameStageStateMachine::new(_material);
             Ok(Box::new(GameStage {
                 machine: Some(machine),
             }))
@@ -808,6 +768,64 @@ impl Game for GameStage {
                     "28px selif",
                     "left",
                 );
+                /*
+                renderer.text(
+                    &Point {
+                        x: MESSAGE_POSITION_X_X,
+                        y: MESSAGE_POSITION_X_Y - 160.0,
+                    },
+                    format!(
+                        "Raival_2 X: {:.0}",
+                        _state.material.rival_carts[1].get_position().x
+                    )
+                    .as_str(),
+                    FONT_COLOR,
+                    "28px selif",
+                    "left",
+                );
+                renderer.text(
+                    &Point {
+                        x: MESSAGE_POSITION_Y_X,
+                        y: MESSAGE_POSITION_Y_Y - 160.0,
+                    },
+                    format!(
+                        "Raival_2 Y: {:.0}",
+                        _state.material.rival_carts[1].get_distance()
+                    )
+                    .as_str(),
+                    FONT_COLOR,
+                    "28px selif",
+                    "left",
+                );
+                renderer.text(
+                    &Point {
+                        x: MESSAGE_POSITION_X_X,
+                        y: MESSAGE_POSITION_X_Y - 240.0,
+                    },
+                    format!(
+                        "Raival_3 X: {:.0}",
+                        _state.material.rival_carts[2].get_position().x
+                    )
+                    .as_str(),
+                    FONT_COLOR,
+                    "28px selif",
+                    "left",
+                );
+                renderer.text(
+                    &Point {
+                        x: MESSAGE_POSITION_Y_X,
+                        y: MESSAGE_POSITION_Y_Y - 240.0,
+                    },
+                    format!(
+                        "Raival_3 Y: {:.0}",
+                        _state.material.rival_carts[2].get_distance()
+                    )
+                    .as_str(),
+                    FONT_COLOR,
+                    "28px selif",
+                    "left",
+                );
+                */
                 renderer.text(
                     &Point {
                         x: MESSAGE_HIGHSCORE_X + 720.0,
