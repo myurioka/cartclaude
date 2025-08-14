@@ -20,11 +20,11 @@ use wall::wall::*;
 pub const CANVAS_WIDTH: f32 = 800.0;
 pub const CANVAS_HEIGHT: f32 = 1000.0;
 const CART_START_X: f32 = CANVAS_WIDTH / 2.0;
-const CART_START_Y: f32 = 100.0;
+pub const CART_START_Y: f32 = 100.0;
 
 const FONT_COLOR: &str = "green";
 const STAGE_LEFT: f32 = 100.0;
-const STAGE_GOAL: f32 = 4500.0;
+pub const STAGE_GOAL: f32 = 4500.0;
 const VELOCITY_X: f32 = 0.8;
 const VELOCITY_STEP: f32 = 0.03;
 const VELOCITY_BRAKE_STEP: f32 = 0.06;
@@ -168,7 +168,7 @@ struct Playing;
 impl GameStageState<Playing> {
     /// Main update process during gameplay
     fn update(mut self, _keystate: &KeyState) -> RunningEndState {
-        let mut _position: Point = self.material.cart.get_position();
+        let _position: Point = self.material.cart.get_position();
         let mut _velocity: Velocity = self.material.cart.get_velocity();
 
         self.material.distance += _velocity.y;
@@ -177,15 +177,6 @@ impl GameStageState<Playing> {
         if self.material.distance > STAGE_GOAL {
             self.material.lap_count += 1;
             self.material.distance = 0.0; // Reset distance for next lap
-
-            // Reset cart position to start
-            self.material.cart = Cart::new(
-                Point {
-                    x: _position.x,
-                    y: CART_START_Y,
-                },
-                Velocity { x: 0.0, y: 0.0 },
-            );
 
             // Reset walls to original positions
             self.material.walls.clear();
@@ -210,11 +201,15 @@ impl GameStageState<Playing> {
                 Velocity { x: 0.0, y: 0.0 },
             )];
 
-            // Reset rival cart position
-            //self.material.rival_cart.reset(Point {
-            //    x: CART_START_X - 50.0,
-            //    y: CART_START_Y,
-            //});
+            // Reset rival carts positions
+            let mut _rival_carts: Vec<RivalCart> = Vec::new();
+            for r in self.material.rival_carts {
+                let mut _p = r.get_position();
+                let _speed = r.get_velocity().y;
+                let _distance = r.get_distance();
+                _rival_carts.push(RivalCart::new(&self.material.walls, _p, _speed, _distance));
+            }
+            self.material.rival_carts = _rival_carts;
 
             // Check if cart completed 3 laps
             if self.material.lap_count >= 3 {
@@ -289,9 +284,12 @@ impl GameStageState<Playing> {
         }
 
         self.material.cart.update();
-        self.material
-            .rival_cart
-            .update(self.material.cart.get_velocity());
+
+        // Update all rival carts
+        self.material.rival_carts.iter_mut().for_each(|rival_cart| {
+            rival_cart.update(self.material.cart.get_velocity());
+        });
+
         self.material.ornaments.iter_mut().for_each(|ornament| {
             ornament.update();
         });
@@ -299,10 +297,17 @@ impl GameStageState<Playing> {
             wall.update();
         });
 
-        // Update rival cart
-        self.material
-            .rival_cart
-            .update(self.material.cart.get_velocity());
+        // Check collision with rival carts
+        let cart_position = self.material.cart.get_position();
+        for rival_cart in &self.material.rival_carts {
+            if rival_cart.check_collision_with_cart(cart_position) {
+                self.material.cart.knocked();
+                return RunningEndState::GameOver(GameStageState {
+                    _state: GameOver,
+                    material: self.material,
+                });
+            }
+        }
 
         RunningEndState::Continue(self)
     }
@@ -526,10 +531,9 @@ pub struct Material {
     ornaments: Vec<Ornament>,
     walls: Vec<Wall>,
     lap_count: i32,
-    rival_cart: RivalCart,
+    rival_carts: Vec<RivalCart>,
 }
 impl Material {
-    /// Create new game materials (set highscore, audio, and sound)
     fn new(_highscore: i32, audio: Audio, sound: Sound) -> Self {
         let mut _walls = vec![];
         let _start_time: i32 = now().unwrap() as i32;
@@ -541,6 +545,39 @@ impl Material {
             ));
         }
         let _walls_copy = _walls.clone();
+
+        // Create 3 rival cars with different speeds and positions
+        let mut rival_carts = vec![];
+        rival_carts.push(RivalCart::new(
+            &_walls_copy,
+            Point {
+                x: CART_START_X - 50.0,
+                y: CART_START_Y,
+            },
+            0.1, // Original speed
+            0.0,
+        ));
+        /*
+        rival_carts.push(RivalCart::new(
+            &_walls_copy,
+            Point {
+                x: CART_START_X - 200.0,
+                y: CART_START_Y,
+            },
+            0.1, // Speed 2.0
+            0.0,
+        ));
+        rival_carts.push(RivalCart::new(
+            &_walls_copy,
+            Point {
+                x: CART_START_X + 250.0,
+                y: CART_START_Y,
+            },
+            0.1, // Speed 1.0
+            0.0,
+        ));
+        */
+
         Material {
             music: Music::new(audio, sound),
             distance: 0.0,
@@ -567,13 +604,7 @@ impl Material {
             )],
             walls: _walls,
             lap_count: 0,
-            rival_cart: RivalCart::new(
-                &_walls_copy,
-                Point {
-                    x: CART_START_X - 50.0,
-                    y: CART_START_Y,
-                },
-            ),
+            rival_carts,
         }
     }
     /// Reset game materials (keep highscore)
@@ -584,7 +615,6 @@ impl Material {
             material.music.sound.clone(),
         )
     }
-    /// Draw all game elements
     fn draw(&self, renderer: &Renderer) {
         self.cart.draw(renderer);
         self.ornaments.iter().for_each(|ornament| {
@@ -593,7 +623,9 @@ impl Material {
         self.walls.iter().for_each(|wall| {
             wall.draw(renderer);
         });
-        self.rival_cart.draw(renderer);
+        self.rival_carts.iter().for_each(|rival_cart| {
+            rival_cart.draw(renderer);
+        });
     }
 }
 
@@ -644,13 +676,37 @@ impl Game for GameStage {
                 )],
                 walls: _walls_copy,
                 lap_count: 0,
-                rival_cart: RivalCart::new(
-                    &_walls,
-                    Point {
-                        x: CART_START_X - 50.0,
-                        y: CART_START_Y,
-                    },
-                ),
+                rival_carts: {
+                    let mut rival_carts = vec![];
+                    rival_carts.push(RivalCart::new(
+                        &_walls,
+                        Point {
+                            x: CART_START_X - 50.0,
+                            y: CART_START_Y,
+                        },
+                        3.0,
+                        0.0,
+                    ));
+                    rival_carts.push(RivalCart::new(
+                        &_walls,
+                        Point {
+                            x: CART_START_X - 200.0,
+                            y: CART_START_Y,
+                        },
+                        2.0,
+                        0.0,
+                    ));
+                    rival_carts.push(RivalCart::new(
+                        &_walls,
+                        Point {
+                            x: CART_START_X + 250.0,
+                            y: CART_START_Y,
+                        },
+                        1.0,
+                        0.0,
+                    ));
+                    rival_carts
+                },
             });
             Ok(Box::new(GameStage {
                 machine: Some(machine),
@@ -720,6 +776,34 @@ impl Game for GameStage {
                         y: MESSAGE_POSITION_Y_Y,
                     },
                     format!("Position Y: {:.0}", _state.material.distance).as_str(),
+                    FONT_COLOR,
+                    "28px selif",
+                    "left",
+                );
+                renderer.text(
+                    &Point {
+                        x: MESSAGE_POSITION_X_X,
+                        y: MESSAGE_POSITION_X_Y - 80.0,
+                    },
+                    format!(
+                        "Raival_1 X: {:.0}",
+                        _state.material.rival_carts[0].get_position().x
+                    )
+                    .as_str(),
+                    FONT_COLOR,
+                    "28px selif",
+                    "left",
+                );
+                renderer.text(
+                    &Point {
+                        x: MESSAGE_POSITION_Y_X,
+                        y: MESSAGE_POSITION_Y_Y - 80.0,
+                    },
+                    format!(
+                        "Raival_1 Y: {:.0}",
+                        _state.material.rival_carts[0].get_distance()
+                    )
+                    .as_str(),
                     FONT_COLOR,
                     "28px selif",
                     "left",

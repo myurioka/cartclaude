@@ -199,6 +199,71 @@ impl Renderer {
         );
     }
 
+    /// Draw rival racing car in normal state with blue color (o●o / ◆ / O●O)
+    pub fn draw_blue_normal_racing_car(&self, position: &Point) {
+        let wheel_color = "#1a4f5a"; // Dark blue wheels
+        let body_color = "#3366cc"; // Blue body
+        let diamond_color = "#4a9f6a"; // Green diamond
+
+        // Row 1: o●o (small wheels and center body)
+        let row1_y = position.y;
+        self.draw_small_wheel(
+            &Point {
+                x: position.x - 12.0,
+                y: row1_y,
+            },
+            wheel_color,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x,
+                y: row1_y,
+            },
+            body_color,
+        );
+        self.draw_small_wheel(
+            &Point {
+                x: position.x + 12.0,
+                y: row1_y,
+            },
+            wheel_color,
+        );
+
+        // Row 2: ◆ (diamond body)
+        let row2_y = position.y - 18.0; // CART_DISTANCE
+        self.draw_diamond_body(
+            &Point {
+                x: position.x,
+                y: row2_y,
+            },
+            diamond_color,
+        );
+
+        // Row 3: O●O (large wheels and center body)
+        let row3_y = position.y - 36.0; // 2 * CART_DISTANCE
+        self.draw_large_wheel(
+            &Point {
+                x: position.x - 12.0,
+                y: row3_y,
+            },
+            wheel_color,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x,
+                y: row3_y,
+            },
+            body_color,
+        );
+        self.draw_large_wheel(
+            &Point {
+                x: position.x + 12.0,
+                y: row3_y,
+            },
+            wheel_color,
+        );
+    }
+
     /// Draw racing car in knocked/damaged state (O● O / ◆ / o ●o)
     pub fn draw_knocked_racing_car(&self, position: &Point) {
         let wheel_color = "#2a5f41"; // Green wheels
@@ -269,6 +334,83 @@ impl Renderer {
         let wheel_color = "#2a5f41";
         let body_color = "#cc3333";
         let diamond_color = "#4a9f6a";
+
+        // Row 1: Elliptical wheels for perspective
+        let row1_y = position.y;
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x - 10.0,
+                y: row1_y,
+            },
+            4.0,
+            3.0,
+            wheel_color,
+            true,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x + 2.0,
+                y: row1_y,
+            },
+            body_color,
+        );
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x + 14.0,
+                y: row1_y,
+            },
+            3.0,
+            4.0,
+            wheel_color,
+            true,
+        );
+
+        // Row 2: Diamond slightly offset left
+        let row2_y = position.y - 18.0;
+        self.draw_diamond_body(
+            &Point {
+                x: position.x - 2.0,
+                y: row2_y,
+            },
+            diamond_color,
+        );
+
+        // Row 3: Elliptical large wheels for perspective
+        let row3_y = position.y - 36.0;
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x - 10.0,
+                y: row3_y,
+            },
+            5.0,
+            4.0,
+            wheel_color,
+            false,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x + 2.0,
+                y: row3_y,
+            },
+            body_color,
+        );
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x + 14.0,
+                y: row3_y,
+            },
+            4.0,
+            5.0,
+            wheel_color,
+            false,
+        );
+    }
+
+    /// Draw blue rival racing car facing left (with perspective)
+    pub fn draw_blue_left_facing_racing_car(&self, position: &Point) {
+        let wheel_color = "#1a4f5a"; // Dark blue wheels
+        let body_color = "#3366cc"; // Blue body
+        let diamond_color = "#4a9f6a"; // Green diamond
 
         // Row 1: Elliptical wheels for perspective
         let row1_y = position.y;
@@ -418,6 +560,83 @@ impl Renderer {
         );
     }
 
+    /// Draw blue rival racing car facing right (with perspective)
+    pub fn draw_blue_right_facing_racing_car(&self, position: &Point) {
+        let wheel_color = "#1a4f5a"; // Dark blue wheels
+        let body_color = "#3366cc"; // Blue body
+        let diamond_color = "#4a9f6a";
+
+        // Row 1: Elliptical wheels for perspective
+        let row1_y = position.y;
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x - 14.0,
+                y: row1_y,
+            },
+            3.0,
+            4.0,
+            wheel_color,
+            true,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x - 2.0,
+                y: row1_y,
+            },
+            body_color,
+        );
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x + 10.0,
+                y: row1_y,
+            },
+            4.0,
+            3.0,
+            wheel_color,
+            true,
+        );
+
+        // Row 2: Diamond slightly offset right
+        let row2_y = position.y - 18.0;
+        self.draw_diamond_body(
+            &Point {
+                x: position.x + 2.0,
+                y: row2_y,
+            },
+            diamond_color,
+        );
+
+        // Row 3: Elliptical large wheels for perspective
+        let row3_y = position.y - 36.0;
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x - 14.0,
+                y: row3_y,
+            },
+            4.0,
+            5.0,
+            wheel_color,
+            false,
+        );
+        self.draw_center_body(
+            &Point {
+                x: position.x - 2.0,
+                y: row3_y,
+            },
+            body_color,
+        );
+        self.draw_ellipse_wheel(
+            &Point {
+                x: position.x + 10.0,
+                y: row3_y,
+            },
+            5.0,
+            4.0,
+            wheel_color,
+            false,
+        );
+    }
+
     /// Helper method to draw elliptical wheels for perspective views
     fn draw_ellipse_wheel(
         &self,
@@ -457,29 +676,29 @@ impl Renderer {
     /// Draw a tree trunk (▯) at the specified position
     pub fn draw_tree_trunk(&self, point: &Point, color: &str) {
         let canvas_y = CANVAS_HEIGHT as f64 - point.y as f64;
-        
+
         self.context.set_fill_style_str(color);
         self.context.set_stroke_style_str("#8B4513"); // Brown stroke
         self.context.set_line_width(1.0);
-        
+
         self.context.begin_path();
         // Rectangle trunk: width=8, height=12
         self.context.rect(
-            point.x as f64 - 4.0,  // x - width/2
-            canvas_y - 6.0,        // y - height/2
-            8.0,                   // width
-            12.0,                  // height
+            point.x as f64 - 4.0, // x - width/2
+            canvas_y - 6.0,       // y - height/2
+            8.0,                  // width
+            12.0,                 // height
         );
         self.context.fill();
         self.context.stroke();
     }
-    
+
     /// Draw tree leaves ($) as a circle at the specified position
     pub fn draw_tree_leaves(&self, point: &Point, color: &str, radius: f32) {
         self.context.set_fill_style_str(color);
         self.context.set_stroke_style_str("#2d5016"); // Dark green stroke
         self.context.set_line_width(0.5);
-        
+
         self.context.begin_path();
         self.context
             .arc(
@@ -493,22 +712,22 @@ impl Renderer {
         self.context.fill();
         self.context.stroke();
     }
-    
+
     /// Draw a fruit on tree (various colored circles for different fruits)
     pub fn draw_fruit(&self, point: &Point, fruit_type: &str) {
         let (color, stroke_color, radius) = match fruit_type {
-            "apple" => ("#ff4444", "#cc2222", 3.0),      // Red apple
-            "orange" => ("#ff8800", "#dd6600", 3.5),     // Orange
-            "cherry" => ("#dd0000", "#aa0000", 2.5),     // Red cherry
-            "lemon" => ("#ffff44", "#dddd22", 3.0),      // Yellow lemon
-            "plum" => ("#8844ff", "#6622dd", 3.0),       // Purple plum
-            _ => ("#44ff44", "#22dd22", 3.0),            // Default green
+            "apple" => ("#ff4444", "#cc2222", 3.0),  // Red apple
+            "orange" => ("#ff8800", "#dd6600", 3.5), // Orange
+            "cherry" => ("#dd0000", "#aa0000", 2.5), // Red cherry
+            "lemon" => ("#ffff44", "#dddd22", 3.0),  // Yellow lemon
+            "plum" => ("#8844ff", "#6622dd", 3.0),   // Purple plum
+            _ => ("#44ff44", "#22dd22", 3.0),        // Default green
         };
-        
+
         self.context.set_fill_style_str(color);
         self.context.set_stroke_style_str(stroke_color);
         self.context.set_line_width(0.8);
-        
+
         self.context.begin_path();
         self.context
             .arc(
@@ -522,11 +741,11 @@ impl Renderer {
         self.context.fill();
         self.context.stroke();
     }
-    
+
     /// Draw a complete fruit tree at the specified position
     pub fn draw_fruit_tree(&self, position: &Point, fruit_type: &str) {
         let tree_distance = 12.0;
-        
+
         // Layer 1: " $ " - Single small leaf cluster
         self.draw_tree_leaves(
             &Point {
@@ -544,7 +763,7 @@ impl Renderer {
             },
             fruit_type,
         );
-        
+
         // Layer 2: " $$ " - Two leaf clusters
         let layer2_y = position.y - tree_distance;
         self.draw_tree_leaves(
@@ -578,7 +797,7 @@ impl Renderer {
             },
             fruit_type,
         );
-        
+
         // Layer 3: "$$$" - Three leaf clusters (main canopy)
         let layer3_y = position.y - tree_distance * 2.0;
         self.draw_tree_leaves(
@@ -627,7 +846,7 @@ impl Renderer {
             },
             fruit_type,
         );
-        
+
         // Layer 4: " ▯ " - Tree trunk
         let layer4_y = position.y - tree_distance * 3.0;
         self.draw_tree_trunk(
