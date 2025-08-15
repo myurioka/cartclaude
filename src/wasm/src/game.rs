@@ -566,7 +566,7 @@ impl Material {
         _rival_carts.push(RivalCart::new(
             &_walls_copy,
             Point {
-                x: CART_START_X - 50.0,
+                x: CART_START_X - 80.0,
                 y: CART_START_Y,
             },
             3.0, // Original speed

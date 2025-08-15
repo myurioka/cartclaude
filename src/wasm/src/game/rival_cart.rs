@@ -3,12 +3,14 @@ pub mod rival_cart {
     use crate::engine::{Point, Renderer, Velocity};
     use crate::game::cart::cart::CarDirection;
     use crate::game::wall::wall::Wall;
-    use crate::game::{CART_START_Y, Piece, STAGE_GOAL};
+    use crate::game::{CANVAS_WIDTH, CART_START_Y, Piece, STAGE_GOAL};
 
     const RIVAL_CART_WIDTH: f32 = 20.0;
     const RIVAL_CART_HEIGHT: f32 = 50.0;
     const RIVAL_VELOCITY: f32 = 3.0;
-    const COLLISION_CHECK_DISTANCE: f32 = 80.0;
+    const COLLISION_CHECK_DISTANCE: f32 = 50.0;
+    const LEFT_EDGE: f32 = 100.0;
+    const RIGHT_EDGE: f32 = 700.0;
 
     pub struct RivalCart {
         position: Point,
@@ -29,6 +31,13 @@ pub mod rival_cart {
             }
         }
         pub fn update(&mut self, _velocity: Velocity) {
+            // Update Walls
+            self.walls.iter_mut().for_each(|wall| {
+                wall.run(Velocity {
+                    x: 0.0,
+                    y: self.velocity.y,
+                });
+            });
             // Update rival's own distance independently
             self.distance += self.velocity.y;
 
@@ -39,106 +48,73 @@ pub mod rival_cart {
             self.check_collision_and_adjust(self.distance);
 
             // Update X position with calculated horizontal velocity
-            self.position.x += self.velocity.x;
+            let _x: f32 = self.position.x + self.velocity.x;
+            if (_x > LEFT_EDGE + RIVAL_CART_WIDTH / 2.0)
+                && (_x < RIGHT_EDGE - RIVAL_CART_WIDTH / 2.0)
+            {
+                self.position.x += self.velocity.x;
+            }
         }
         pub fn get_distance(&self) -> f32 {
             self.distance
         }
-        pub fn set_position_y(&mut self, _y: f32) {
-            self.position.y = _y;
-        }
 
         fn check_collision_and_adjust(&mut self, distance: f32) {
-            let check_ahead = distance + COLLISION_CHECK_DISTANCE;
+            let center_x = self.position.x;
+            let center_y = distance;
+            let left_x = center_x - RIVAL_CART_WIDTH / 2.0;
+            let check_distance = 80.0;
 
-            // Find walls that we might collide with
-            let mut safe_x_positions = vec![];
-            let mut blocked_ranges = vec![];
-
-            for wall in &self.walls {
-                let wall_min_y = wall.p().y.min(wall.q().y);
-                let wall_max_y = wall.p().y.max(wall.q().y);
-
-                // Check if wall is ahead of us
-                if wall_min_y <= check_ahead && wall_max_y >= distance {
-                    let wall_x_min = wall.p().x.min(wall.q().x) - RIVAL_CART_WIDTH;
-                    let wall_x_max = wall.p().x.max(wall.q().x) + RIVAL_CART_WIDTH;
-                    blocked_ranges.push((wall_x_min, wall_x_max));
-                }
-            }
-
-            // Find safe x positions (gaps between walls)
-            blocked_ranges.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-
-            let mut current_safe_start: f32 = 120.0; // Left boundary of track
-            let track_right = 680.0; // Right boundary of track
-
-            for (block_start, block_end) in blocked_ranges {
-                if current_safe_start < block_start {
-                    let safe_center = (current_safe_start + block_start) / 2.0;
-                    if safe_center >= 120.0 && safe_center <= track_right {
-                        safe_x_positions.push(safe_center);
-                    }
-                }
-                current_safe_start = current_safe_start.max(block_end);
-            }
-
-            // Add final safe position after last wall
-            if current_safe_start < track_right {
-                let safe_center = (current_safe_start + track_right) / 2.0;
-                safe_x_positions.push(safe_center);
-            }
-
-            // Choose best safe position and move towards it
-            if !safe_x_positions.is_empty() {
-                // Find the closest safe position to current position
-                let mut best_safe_x = safe_x_positions[0];
-                let mut min_distance = (safe_x_positions[0] - self.position.x).abs();
-
-                for &safe_x in &safe_x_positions {
-                    let dist = (safe_x - self.position.x).abs();
-                    if dist < min_distance {
-                        min_distance = dist;
-                        best_safe_x = safe_x;
-                    }
-                }
-
-                // Move towards the best safe position
-                let move_speed: f32 = 2.0; // Horizontal movement speed
-                let distance_to_safe = best_safe_x - self.position.x;
-
-                if distance_to_safe.abs() > 5.0 {
-                    // Only move if not already close enough
-                    if distance_to_safe > 0.0 {
-                        self.velocity.x = move_speed.min(distance_to_safe);
-                        self.direction = CarDirection::Right;
-                    } else {
-                        self.velocity.x = (-move_speed).max(distance_to_safe);
-                        self.direction = CarDirection::Left;
-                    }
-                } else {
-                    self.velocity.x = 0.0;
-                    self.direction = CarDirection::Normal;
-                }
+            // 1. ライバルカーの中央と中央からcheck_100px先の点を結んだ線と壁の交差チェック
+            let _center_ahead_point = Point::new(center_x, center_y + check_distance);
+            let _center_point = Point::new(center_x, center_y);
+            if !self.line_segments_intersect(_center_point, _center_ahead_point) {
+                // 交わらない場合は、まっすぐ進む
+                self.velocity.x = 0.0;
+                self.direction = CarDirection::Normal;
+                return;
             } else {
-                // No safe position found, try to move to center of track
-                let track_center = (120.0 + 680.0) / 2.0;
-                let distance_to_center = track_center - self.position.x;
-                let move_speed: f32 = 2.0;
-
-                if distance_to_center.abs() > 5.0 {
-                    if distance_to_center > 0.0 {
-                        self.velocity.x = move_speed.min(distance_to_center);
-                        self.direction = CarDirection::Right;
-                    } else {
-                        self.velocity.x = (-move_speed).max(distance_to_center);
-                        self.direction = CarDirection::Left;
-                    }
+                // 2. ライバルカーの左端と左端から指定した先の点を結んだ線と壁の交差チェック
+                let _left_ahead_point = Point::new(left_x, center_y + check_distance);
+                let _left_point = Point::new(left_x, center_y);
+                if !self.line_segments_intersect(_left_point, _left_ahead_point) {
+                    // 交わらない場合は、左に1px移動
+                    self.velocity.x = -4.0;
+                    self.direction = CarDirection::Left;
+                    return;
                 } else {
-                    self.velocity.x = 0.0;
-                    self.direction = CarDirection::Normal;
+                    // 3. 左端も交わる場合は、右に1px移動
+                    self.velocity.x = 4.0;
+                    self.direction = CarDirection::Right;
                 }
             }
+        }
+
+        fn line_segments_intersect(&self, _p: Point, _q: Point) -> bool {
+            for _w in &self.walls {
+                log!("cart px:{} py:{} qx:{} qy:{}", _p.x, _p.y, _q.x, _q.y);
+                log!(
+                    "wall px:{} py:{} qx:{} qy:{}",
+                    _w.p().x,
+                    _w.p().y,
+                    _w.q().x,
+                    _w.q().y,
+                );
+                if ((_p.x - _q.x) * (_w.p().y - _p.y) + (_p.y - _q.y) * (_p.x - _w.p().x))
+                    * ((_p.x - _q.x) * (_w.q().y - _p.y) + (_p.y - _q.y) * (_p.x - _w.q().x))
+                    < 0.0
+                    && ((_w.p().x - _w.q().x) * (_p.y - _w.p().y)
+                        + (_w.p().y - _w.q().y) * (_w.p().x - _p.x))
+                        * ((_w.p().x - _w.q().x) * (_q.y - _w.p().y)
+                            + (_w.p().y - _w.q().y) * (_w.p().x - _q.x))
+                        < 0.0
+                {
+                    log!("TRUE");
+                    return true;
+                }
+            }
+            log!("FALSE");
+            return false;
         }
 
         pub fn get_position(&self) -> Point {
