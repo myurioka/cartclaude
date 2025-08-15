@@ -209,7 +209,7 @@ impl GameStageState<Playing> {
                     y: r.get_position().y,
                 };
                 let _speed = r.get_velocity().y;
-                _rival_carts.push(RivalCart::new(&self.material.walls, _p, _speed, _distance));
+                _rival_carts.push(RivalCart::new(_p, _speed, _distance));
             }
             self.material.rival_carts = _rival_carts;
 
@@ -268,7 +268,7 @@ impl GameStageState<Playing> {
             });
         });
 
-        // Check Cart collision
+        // Check Cart for Walls
         let _knocked = false;
         for i in 0..self.material.walls.len() {
             let _wall = &self.material.walls[i];
@@ -285,26 +285,27 @@ impl GameStageState<Playing> {
             };
         }
 
+        // Check Cart for Rival Cart
+        for _r in &self.material.rival_carts {
+            if _r.check_collision_with_cart(self.material.cart.get_position()) {
+                self.material.cart.knocked();
+                return RunningEndState::GameOver(GameStageState {
+                    _state: GameOver,
+                    material: self.material,
+                });
+            }
+        }
+
+        // Check Cart &
+
         // Update cart
         self.material.cart.update();
 
-        // Update all rival carts
+        // Update all rival carts check_collision and adjust
+        let _walls = self.material.walls.clone();
         self.material.rival_carts.iter_mut().for_each(|rival_cart| {
-            // Keep rival car within track boundaries
-            //if self.position.x < 120.0 {
-            //    self.position.x = 120.0;
-            //    self.velocity.x = 0.0;
-            //} else if self.position.x > 680.0 {
-            //    self.position.x = 680.0;
-            //    self.velocity.x = 0.0;
-            //}
-            //if rival_cart.get_distance() > STAGE_GOAL {
-            //    let _position_y = self.material.distance;
-            //    let _ = rival_cart.set_position_y(_position_y);
-            //}
-            rival_cart.update(self.material.cart.get_velocity());
+            rival_cart.update(&_walls, self.material.cart.get_velocity());
         });
-
         self.material.ornaments.iter_mut().for_each(|ornament| {
             ornament.update();
         });
@@ -564,7 +565,6 @@ impl Material {
         // Create 3 rival cars with different speeds and positions
         let mut _rival_carts = vec![];
         _rival_carts.push(RivalCart::new(
-            &_walls_copy,
             Point {
                 x: CART_START_X - 80.0,
                 y: CART_START_Y,
@@ -740,92 +740,6 @@ impl Game for GameStage {
                     "28px selif",
                     "left",
                 );
-                renderer.text(
-                    &Point {
-                        x: MESSAGE_POSITION_X_X,
-                        y: MESSAGE_POSITION_X_Y - 80.0,
-                    },
-                    format!(
-                        "Raival_1 X: {:.0}",
-                        _state.material.rival_carts[0].get_position().x
-                    )
-                    .as_str(),
-                    FONT_COLOR,
-                    "28px selif",
-                    "left",
-                );
-                renderer.text(
-                    &Point {
-                        x: MESSAGE_POSITION_Y_X,
-                        y: MESSAGE_POSITION_Y_Y - 80.0,
-                    },
-                    format!(
-                        "Raival_1 Y: {:.0}",
-                        _state.material.rival_carts[0].get_distance()
-                    )
-                    .as_str(),
-                    FONT_COLOR,
-                    "28px selif",
-                    "left",
-                );
-                /*
-                renderer.text(
-                    &Point {
-                        x: MESSAGE_POSITION_X_X,
-                        y: MESSAGE_POSITION_X_Y - 160.0,
-                    },
-                    format!(
-                        "Raival_2 X: {:.0}",
-                        _state.material.rival_carts[1].get_position().x
-                    )
-                    .as_str(),
-                    FONT_COLOR,
-                    "28px selif",
-                    "left",
-                );
-                renderer.text(
-                    &Point {
-                        x: MESSAGE_POSITION_Y_X,
-                        y: MESSAGE_POSITION_Y_Y - 160.0,
-                    },
-                    format!(
-                        "Raival_2 Y: {:.0}",
-                        _state.material.rival_carts[1].get_distance()
-                    )
-                    .as_str(),
-                    FONT_COLOR,
-                    "28px selif",
-                    "left",
-                );
-                renderer.text(
-                    &Point {
-                        x: MESSAGE_POSITION_X_X,
-                        y: MESSAGE_POSITION_X_Y - 240.0,
-                    },
-                    format!(
-                        "Raival_3 X: {:.0}",
-                        _state.material.rival_carts[2].get_position().x
-                    )
-                    .as_str(),
-                    FONT_COLOR,
-                    "28px selif",
-                    "left",
-                );
-                renderer.text(
-                    &Point {
-                        x: MESSAGE_POSITION_Y_X,
-                        y: MESSAGE_POSITION_Y_Y - 240.0,
-                    },
-                    format!(
-                        "Raival_3 Y: {:.0}",
-                        _state.material.rival_carts[2].get_distance()
-                    )
-                    .as_str(),
-                    FONT_COLOR,
-                    "28px selif",
-                    "left",
-                );
-                */
                 renderer.text(
                     &Point {
                         x: MESSAGE_HIGHSCORE_X + 720.0,
