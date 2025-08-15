@@ -202,6 +202,7 @@ impl GameStageState<Playing> {
 
             // Reset rival carts positions
             let mut _rival_carts: Vec<RivalCart> = Vec::new();
+            let mut _no: usize = 3;
             for r in self.material.rival_carts {
                 let _distance = 0.0;
                 let _p = Point {
@@ -209,7 +210,7 @@ impl GameStageState<Playing> {
                     y: r.get_position().y,
                 };
                 let _speed = r.get_velocity().y;
-                _rival_carts.push(RivalCart::new(_p, _speed, _distance));
+                _rival_carts.push(RivalCart::new(_p, _speed, _distance, _no % 3));
             }
             self.material.rival_carts = _rival_carts;
 
@@ -571,27 +572,26 @@ impl Material {
             },
             3.0, // Original speed
             0.0,
+            2,
         ));
-        /*
-        rival_carts.push(RivalCart::new(
-            &_walls_copy,
+        _rival_carts.push(RivalCart::new(
             Point {
-                x: CART_START_X - 200.0,
+                x: CART_START_X - 180.0,
+                y: CART_START_Y + 20.0,
+            },
+            2.8, // Speed 2.0
+            0.0,
+            2,
+        ));
+        _rival_carts.push(RivalCart::new(
+            Point {
+                x: CART_START_X + 180.0,
                 y: CART_START_Y,
             },
-            2.5, // Speed 2.0
+            2.6, // Speed 1.0
             0.0,
+            1,
         ));
-        rival_carts.push(RivalCart::new(
-            &_walls_copy,
-            Point {
-                x: CART_START_X + 200.0,
-                y: CART_START_Y,
-            },
-            1.8, // Speed 1.0
-            0.0,
-        ));
-        */
 
         Material {
             music: Music::new(audio, sound),
@@ -774,7 +774,7 @@ impl Game for GameStage {
                         x: TITLE_MESSAGE_X,
                         y: TITLE_MESSAGE_Y,
                     },
-                    "Race Complete!",
+                    MESSAGE_GAMECLEAR,
                     FONT_COLOR,
                     "48px myfont",
                     "center",

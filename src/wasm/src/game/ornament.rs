@@ -49,16 +49,16 @@ pub mod ornament {
 
             // Fruit trees with different fruits
             let trees = [
-                (30.0, 100.0, "apple"),    // Red apple tree
-                (400.0, 500.0, "orange"),  // Orange tree
-                (400.0, 1000.0, "cherry"), // Cherry tree
-                (120.0, 1500.0, "lemon"),  // Lemon tree
-                (620.0, 2000.0, "plum"),   // Plum tree
-                (240.0, 2300.0, "apple"),  // Another apple tree
-                (620.0, 3200.0, "orange"), // Another orange tree
-                (400.0, 4200.0, "cherry"), // Another cherry tree
-                (320.0, 5000.0, "lemon"),  // Another lemon tree
-                (-50.0, 6000.0, "plum"),   // Another plum tree
+                (30.0, 500.0, "apple"),    // Red apple tree
+                (400.0, 900.0, "orange"),  // Orange tree
+                (400.0, 1400.0, "cherry"), // Cherry tree
+                (120.0, 1900.0, "lemon"),  // Lemon tree
+                (620.0, 2400.0, "plum"),   // Plum tree
+                (240.0, 2700.0, "apple"),  // Another apple tree
+                (620.0, 3600.0, "orange"), // Another orange tree
+                (400.0, 4600.0, "cherry"), // Another cherry tree
+                (320.0, 5400.0, "lemon"),  // Another lemon tree
+                (-50.0, 6400.0, "plum"),   // Another plum tree
             ];
 
             // Draw fruit trees using Canvas instead of ASCII

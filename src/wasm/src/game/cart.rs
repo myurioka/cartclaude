@@ -192,7 +192,7 @@ pub mod cart {
                 velocity: current_context.velocity,
                 direction,
             };
-            
+
             // Update the context in the state machine
             match &mut self.state_machine {
                 CartStateMachine::Idle(state) => {
