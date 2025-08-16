@@ -202,17 +202,21 @@ impl GameStageState<Playing> {
 
             // Reset rival carts positions
             let mut _rival_carts: Vec<RivalCart> = Vec::new();
-            let mut _no: usize = 3;
-            for r in self.material.rival_carts {
-                let _distance = 0.0;
-                let _p = Point {
+            let mut _no: usize;
+            for r in &self.material.rival_carts {
+                let mut _y = r.get_position().y;
+                _no = r.get_no();
+                if _y < 0.0 {
+                    _y = r.get_distance() + CART_START_Y;
+                }
+                let mut _distance = r.get_distance();
+                let mut _p = Point {
                     x: r.get_position().x,
-                    y: r.get_position().y,
+                    y: _y,
                 };
                 let _speed = r.get_velocity().y;
-                _rival_carts.push(RivalCart::new(_p, _speed, _distance, _no % 3));
+                _rival_carts.push(RivalCart::new(_p, _speed, _distance, _no));
             }
-            self.material.rival_carts = _rival_carts;
 
             // Check if cart completed 3 laps
             if self.material.lap_count >= 3 {
@@ -229,12 +233,30 @@ impl GameStageState<Playing> {
             }
         }
 
+        // Rival Cart late or early lap adjust
+        let mut _rival_carts: Vec<RivalCart> = Vec::new();
+        for r in &mut self.material.rival_carts {
+            let _y = r.get_position().y;
+            if r.get_position().y - self.material.cart.get_position().y > STAGE_GOAL {
+                let _p = Point::new(r.get_position().x, r.get_position().y - STAGE_GOAL);
+                r.set_position(_p);
+            } else if self.material.cart.get_position().y - r.get_position().y
+                > STAGE_GOAL - CANVAS_HEIGHT
+            {
+                let _p = Point::new(
+                    r.get_position().x,
+                    r.get_position().y + STAGE_GOAL + CANVAS_HEIGHT,
+                );
+                r.set_position(_p);
+            }
+        }
+
         if _keystate.is_pressed("ArrowUp") && _velocity.y < VELOCITY_LIMIT {
             _velocity.y += VELOCITY_STEP;
         }
         if _keystate.is_pressed("ArrowDown") {
             _velocity.x = 0.0;
-            // 車の向きを通常（正面）に戻す
+            // Return cart to normal
             self.material.cart.set_direction(CarDirection::Normal);
         }
         if _keystate.is_pressed("ArrowLeft") {
@@ -297,8 +319,6 @@ impl GameStageState<Playing> {
             }
         }
 
-        // Check Cart &
-
         // Update cart
         self.material.cart.update();
 
@@ -325,7 +345,6 @@ impl GameStageState<Playing> {
                 });
             }
         }
-
         RunningEndState::Continue(self)
     }
 }
@@ -568,9 +587,9 @@ impl Material {
         _rival_carts.push(RivalCart::new(
             Point {
                 x: CART_START_X - 80.0,
-                y: CART_START_Y,
+                y: CART_START_Y + 100.0,
             },
-            3.0, // Original speed
+            2.0, // speed
             0.0,
             2,
         ));
@@ -579,7 +598,7 @@ impl Material {
                 x: CART_START_X - 180.0,
                 y: CART_START_Y + 20.0,
             },
-            2.8, // Speed 2.0
+            1.5,
             0.0,
             2,
         ));
@@ -588,11 +607,10 @@ impl Material {
                 x: CART_START_X + 180.0,
                 y: CART_START_Y,
             },
-            2.6, // Speed 1.0
+            1.0,
             0.0,
             1,
         ));
-
         Material {
             music: Music::new(audio, sound),
             distance: 0.0,
@@ -622,7 +640,7 @@ impl Material {
             rival_carts: _rival_carts,
         }
     }
-    /// Reset game materials (keep highscore)
+    // Reset game materials (keep highscore)
     fn reset(material: Self) -> Self {
         Material::new(
             material.highscore,
@@ -646,7 +664,7 @@ impl Material {
 
 #[async_trait(?Send)]
 impl Game for GameStage {
-    /// Initialize game and set up audio and game materials
+    // Initialize game and set up audio and game materials
     async fn initialize(&self) -> Result<Box<dyn Game>> {
         log!("START");
         let _none = &self.machine;
@@ -674,12 +692,11 @@ impl Game for GameStage {
         }
     }
 
-    /// Update entire game
+    // Update entire game
     fn update(&mut self, _keystate: &KeyState) {
         if let Some(machine) = self.machine.take() {
             self.machine.replace(machine.update(_keystate));
         }
-        //assert!(self.machine.is_some());
     }
     // Draw the entire game
     fn draw(&self, renderer: &Renderer) {
@@ -720,6 +737,7 @@ impl Game for GameStage {
                     "28px selif",
                     "left",
                 );
+                /*
                 renderer.text(
                     &Point {
                         x: MESSAGE_POSITION_X_X,
@@ -740,6 +758,45 @@ impl Game for GameStage {
                     "28px selif",
                     "left",
                 );
+                renderer.text(
+                    &Point {
+                        x: MESSAGE_POSITION_X_X,
+                        y: MESSAGE_POSITION_Y_Y - 40.0,
+                    },
+                    format!("Distance: {:.0}", _state.material.distance).as_str(),
+                    FONT_COLOR,
+                    "28px selif",
+                    "left",
+                );
+                renderer.text(
+                    &Point {
+                        x: MESSAGE_POSITION_Y_X,
+                        y: MESSAGE_POSITION_Y_Y - 80.0,
+                    },
+                    format!(
+                        "RIVAL_DISTANCE: {:.0}",
+                        _state.material.rival_carts[0].get_distance(),
+                    )
+                    .as_str(),
+                    FONT_COLOR,
+                    "28px selif",
+                    "left",
+                );
+                renderer.text(
+                    &Point {
+                        x: MESSAGE_POSITION_Y_X,
+                        y: MESSAGE_POSITION_Y_Y - 120.0,
+                    },
+                    format!(
+                        "RIVAL_POSITION_Y: {:.0}",
+                        _state.material.rival_carts[0].get_position().y,
+                    )
+                    .as_str(),
+                    FONT_COLOR,
+                    "28px selif",
+                    "left",
+                );
+                */
                 renderer.text(
                     &Point {
                         x: MESSAGE_HIGHSCORE_X + 720.0,

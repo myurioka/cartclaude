@@ -1,9 +1,9 @@
 #[allow(clippy::all)]
 pub mod rival_cart {
     use crate::engine::{Point, Renderer, Velocity};
-    use crate::game::Piece;
     use crate::game::cart::cart::CarDirection;
     use crate::game::wall::wall::Wall;
+    use crate::game::{Piece, STAGE_GOAL};
 
     const RIVAL_CART_WIDTH: f32 = 20.0;
     const COLLISION_CHECK_DISTANCE: f32 = 50.0;
@@ -11,22 +11,23 @@ pub mod rival_cart {
     const RIGHT_EDGE: f32 = 700.0;
     const EVASION_SPEED: f32 = 4.0;
 
+    #[derive(Copy, Clone)]
     pub struct RivalCart {
         position: Point,
         velocity: Velocity,
         direction: CarDirection,
         distance: f32, // Rival cart's own distance counter
-        number: usize,
+        no: usize,
     }
 
     impl RivalCart {
-        pub fn new(_position: Point, speed: f32, _distance: f32, _number: usize) -> Self {
+        pub fn new(_position: Point, speed: f32, _distance: f32, _no: usize) -> Self {
             RivalCart {
                 position: _position,
                 velocity: Velocity { x: 0.0, y: speed },
                 direction: CarDirection::Normal,
                 distance: _distance,
-                number: _number,
+                no: _no,
             }
         }
         pub fn update(&mut self, _walls: &[Wall], _velocity: Velocity) {
@@ -42,6 +43,10 @@ pub mod rival_cart {
                 && (_x < RIGHT_EDGE - RIVAL_CART_WIDTH / 2.0)
             {
                 self.position.x += self.velocity.x;
+            }
+
+            if self.distance > STAGE_GOAL {
+                self.distance = 0.0;
             }
 
             // Check for upcoming walls and adjust path using rival's own distance
@@ -68,7 +73,7 @@ pub mod rival_cart {
                 self.direction = CarDirection::Normal;
                 return;
             }
-            match self.number {
+            match self.no {
                 1 => {
                     // 2. Checks whether the line connecting the left edge of the rival car
                     if !self.line_segments_intersect(_walls, _left_point, _left_ahead_point) {
@@ -115,12 +120,24 @@ pub mod rival_cart {
             return false;
         }
 
+        pub fn set_position(&mut self, _position: Point) {
+            self.position = _position
+        }
+
         pub fn get_position(&self) -> Point {
             self.position
         }
 
         pub fn get_velocity(&self) -> Velocity {
             self.velocity
+        }
+
+        pub fn get_distance(&self) -> f32 {
+            self.distance
+        }
+
+        pub fn get_no(&self) -> usize {
+            self.no
         }
 
         pub fn check_collision_with_cart(&self, cart_position: Point) -> bool {
